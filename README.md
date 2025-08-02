@@ -1,3 +1,4 @@
-# lynx-lang
+# The Lynx Programming Language
 
-The Lynx programming language
+It's still in the early stage of development.
+Stay tuned.
