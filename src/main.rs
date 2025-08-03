@@ -1,23 +1,10 @@
 mod token;
-
-use logos::Logos;
-use token::Token;
+mod lexer;
 
 fn main() {
-    let src = r#"
-    for i in range do (
-        println(i)
-        if math.is_prime(i) then True
-        else False
-    )
-    "#;
+    let args: Vec<String> = std::env::args().collect();
+    let path = &args[1];
 
-    let lex = Token::lexer(src);
+    let src = std::fs::read(path).expect("Failed to read file");
 
-    for result in lex {
-        match result {
-            Ok(token) => println!("{:#?}", token),
-            Err(_) => panic!("Syntax Error"),
-        }
-    }
 }
