@@ -105,6 +105,7 @@ impl<'a> Lexer<'a> {
             "return"    => Token::Return,
             "then"      => Token::Then,
             "type"      => Token::Type,
+            "var"       => Token::Var,
             "while"     => Token::While,
             "with"      => Token::With,
 

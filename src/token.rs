@@ -18,6 +18,7 @@ pub enum Token {
     Return,
     Then,
     Type,
+    Var,
     While,
     With,
 
