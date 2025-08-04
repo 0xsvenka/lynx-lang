@@ -5,3 +5,8 @@ for i in 1..100 (
     f = i => j => i + j
     incr = f(1, ~)
 )
+
+
+var a = 1
+a := 2; b = a
+_for_a = 29999865789
