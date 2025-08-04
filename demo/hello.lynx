@@ -1,1 +1,7 @@
 println("Hello, World!")
+
+
+for i in 1..100 (
+    f = i => j => i + j
+    incr = f(1, ~)
+)

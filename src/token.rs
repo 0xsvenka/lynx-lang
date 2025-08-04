@@ -1,25 +1,68 @@
+#[derive(Debug, PartialEq)]
 pub enum Token {
-    ExprEnd,
-
-    If,
-
-    Then,
-
-    Else,
-
-    While,
-
+    // Keywords
+    Async,
+    Await,
+    Break,
+    Continue,
     Do,
-
+    Else,
+    Fn,
     For,
-
+    If,
+    Import,
     In,
+    Match,
+    Mod,
+    Not,
+    Return,
+    Then,
+    Type,
+    While,
+    With,
 
-    LP,
+    // Operators
+    Add,            // +
+    Sub,            // -
+    Mul,            // *
+    Div,            // /
+    Exp,            // ^
+    Eq,             // ==
+    Ne,             // !=
+    Gt,             // >
+    Lt,             // <
+    Ge,             // >=
+    Le,             // <=
+    And,            // &&
+    Or,             // ||
+    Intersection,   // &
+    Union,          // |
+    Bind,           // =
+    Assign,         // :=
+    Range,          // ..
+    
+    // Separators
+    Lp,             // (
+    Rp,             // )
+    Lb,             // [
+    Rb,             // ]
+    Lc,             // {
+    Rc,             // }
+    Colon,          // :
+    Comma,          // ,
+    ExprEnd,        // ; or EOL         
+    Dot,            // .
+    Ellipsis,       // ...
+    Underscore,     // _
+    Tilde,          // ~
+    Arrow,          // ->
+    FatArrow,       // =>
 
-    RP,
+    // Literals
+    StrLiteral(String),
+    NumLiteral(i64),
 
-    Dot,
+    Id(String),
 
-    Id,
+    EOF,
 }
