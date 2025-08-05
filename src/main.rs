@@ -1,4 +1,4 @@
-use crate::{lexer::Lexer, token::Token};
+use crate::lexer::Lexer;
 
 mod token;
 mod lexer;
@@ -10,18 +10,14 @@ fn main() {
     let src = std::fs::read_to_string(path).expect("Failed to read file");
 
     let mut lexer = Lexer::new(&src);
-    loop {
-        match lexer.next_token() {
-            Ok(token) => {
+    match lexer.tokens() {
+        Ok(tokens) => {
+            for token in tokens {
                 println!("{:?}", token);
-                if token == Token::EOF {
-                    break;
-                }
             }
-            Err(e) => {
-                eprintln!("Lexer error: {:?}", e);
-                break;
-            }
+        }
+        Err(e) => {
+            eprintln!("Lexer error: {:?}", e);
         }
     }
 }
