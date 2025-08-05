@@ -4,7 +4,7 @@ use crate::token::Token;
 
 #[derive(Debug)]
 pub enum LexerErr {
-    MalformedNum,
+    InvalidNumFormat,
     UnexpectedChar(char),
     UnterminatedStr,
 }
@@ -14,36 +14,33 @@ pub struct Lexer<'a> {
     keywords_table: HashMap<&'a str, Token>,
 }
 
-fn build_keywords_table() -> HashMap<&'static str, Token> {
-    let mut keywords_table = HashMap::new();
-    keywords_table.insert("async"   , Token::Async);
-    keywords_table.insert("await"   , Token::Await);
-    keywords_table.insert("break"   , Token::Break);
-    keywords_table.insert("continue", Token::Continue);
-    keywords_table.insert("do"      , Token::Do);
-    keywords_table.insert("else"    , Token::Else);
-    keywords_table.insert("fn"      , Token::Fn);
-    keywords_table.insert("for"     , Token::For);
-    keywords_table.insert("if"      , Token::If);
-    keywords_table.insert("import"  , Token::Import);
-    keywords_table.insert("in"      , Token::In);
-    keywords_table.insert("match"   , Token::Match);
-    keywords_table.insert("mod"     , Token::Mod);
-    keywords_table.insert("not"     , Token::Not);
-    keywords_table.insert("return"  , Token::Return);
-    keywords_table.insert("then"    , Token::Then);
-    keywords_table.insert("type"    , Token::Type);
-    keywords_table.insert("var"     , Token::Var);
-    keywords_table.insert("while"   , Token::While);
-    keywords_table.insert("with"    , Token::With);
-    keywords_table
-}
-
 impl<'a> Lexer<'a> {
     pub fn new(src: &'a str) -> Self {
         Self {
             chars: src.chars().peekable(),
-            keywords_table: build_keywords_table(),
+
+            keywords_table: HashMap::from([
+                ("async"   , Token::Async),
+                ("await"   , Token::Await),
+                ("break"   , Token::Break),
+                ("continue", Token::Continue),
+                ("do"      , Token::Do),
+                ("else"    , Token::Else),
+                ("fn"      , Token::Fn),
+                ("for"     , Token::For),
+                ("if"      , Token::If),
+                ("import"  , Token::Import),
+                ("in"      , Token::In),
+                ("match"   , Token::Match),
+                ("mod"     , Token::Mod),
+                ("not"     , Token::Not),
+                ("return"  , Token::Return),
+                ("then"    , Token::Then),
+                ("type"    , Token::Type),
+                ("var"     , Token::Var),
+                ("while"   , Token::While),
+                ("with"    , Token::With),
+            ]),
         }
     }
 
@@ -102,7 +99,7 @@ impl<'a> Lexer<'a> {
         if let Ok(num) = num_str.parse() {
             Ok(Token::NumLiteral(num))
         } else {
-            Err(LexerErr::MalformedNum)
+            Err(LexerErr::InvalidNumFormat)
         }
     }
 
@@ -122,7 +119,174 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    pub fn next_token(&mut self) -> Result<Token, LexerErr> {
+    fn lex_others(&mut self, c: char) -> Result<Token, LexerErr> {
+        match c {
+            // Lex operators & separators
+            '(' => {
+                self.chars.next();
+                Ok(Token::Lp)
+            }
+            ')' => {
+                self.chars.next();
+                Ok(Token::Rp)
+            }
+            '[' => {
+                self.chars.next();
+                Ok(Token::Lb)
+            }
+            ']' => {
+                self.chars.next();
+                Ok(Token::Rb)
+            }
+            '{' => {
+                self.chars.next();
+                Ok(Token::Lc)
+            }
+            '}' => {
+                self.chars.next();
+                Ok(Token::Rc)
+            }
+            ':' => {
+                self.chars.next();
+                match self.chars.peek() {
+                    Some('=') => {
+                        self.chars.next();
+                        Ok(Token::Assign)
+                    }
+                    _ => Ok(Token::Colon)
+                }
+            }
+            ',' => {
+                self.chars.next();
+                Ok(Token::Comma)
+            }
+            ';' | '\n' => {
+                self.chars.next();
+                Ok(Token::ExprEnd)
+            }
+            '.' => {
+                self.chars.next();
+                match self.chars.peek() {
+                    Some('.') => {
+                        self.chars.next();
+                        match self.chars.peek() {
+                            Some('.') => {
+                                self.chars.next();
+                                Ok(Token::Ellipsis)
+                            }
+                            _ => Ok(Token::Range)
+                        }
+                    }
+                    _ => Ok(Token::Dot)
+                }
+            }
+            '_' => {
+                self.chars.next();
+                Ok(Token::Underscore)
+            }
+            '~' => {
+                self.chars.next();
+                Ok(Token::Tilde)
+            }
+            '+' => {
+                self.chars.next();
+                Ok(Token::Add)
+            }
+            '-' => {
+                self.chars.next();
+                match self.chars.peek() {
+                    Some('>') => {
+                        self.chars.next();
+                        Ok(Token::Arrow)
+                    }
+                    _ => Ok(Token::Sub)
+                }
+            }
+            '*' => {
+                self.chars.next();
+                Ok(Token::Mul)
+
+            }
+            '/' => {
+                self.chars.next();
+                Ok(Token::Div)
+            }
+            '^' => {
+                self.chars.next();
+                Ok(Token::Exp)
+            }
+            '=' => {
+                self.chars.next();
+                match self.chars.peek() {
+                    Some('=') => {
+                        self.chars.next();
+                        Ok(Token::Eq)
+                    }
+                    Some('>') => {
+                        self.chars.next();
+                        Ok(Token::FatArrow)
+                    }
+                    _ => Ok(Token::Bind)
+                }
+            }
+            '!' => {
+                self.chars.next();
+                match self.chars.peek() {
+                    Some('=') => {
+                        self.chars.next();
+                        Ok(Token::Ne)
+                    }
+                    _ => Err(LexerErr::UnexpectedChar('!'))
+                }
+            }
+            '>' => {
+                self.chars.next();
+                match self.chars.peek() {
+                    Some('=') => {
+                        self.chars.next();
+                        Ok(Token::Ge)
+                    }
+                    _ => Ok(Token::Gt)
+                }
+            }
+            '<' => {
+                self.chars.next();
+                match self.chars.peek() {
+                    Some('>') => {
+                        self.chars.next();
+                        Ok(Token::Le)
+                    }
+                    _ => Ok(Token::Lt)
+                }
+            }
+            '&' => {
+                self.chars.next();
+                match self.chars.peek() {
+                    Some('&') => {
+                        self.chars.next();
+                        Ok(Token::And)
+                    }
+                    _ => Ok(Token::Intersection)
+                }
+            }
+            '|' => {
+                self.chars.next();
+                match self.chars.peek() {
+                    Some('|') => {
+                        self.chars.next();
+                        Ok(Token::Or)
+                    }
+                    _ => Ok(Token::Union)
+                }
+            }
+
+            other => {
+                Err(LexerErr::UnexpectedChar(other))
+            }
+        }
+    }
+
+    fn next_token(&mut self) -> Result<Token, LexerErr> {
         self.skip_ws();
 
         match self.chars.peek() {
@@ -139,168 +303,8 @@ impl<'a> Lexer<'a> {
             Some(&c) if c.is_alphabetic() || c == '_' => {
                 self.lex_id_or_keyword()
             }
-            
-            // Lex operators & separators
-            Some('(') => {
-                self.chars.next();
-                Ok(Token::Lp)
-            }
-            Some(')') => {
-                self.chars.next();
-                Ok(Token::Rp)
-            }
-            Some('[') => {
-                self.chars.next();
-                Ok(Token::Lb)
-            }
-            Some(']') => {
-                self.chars.next();
-                Ok(Token::Rb)
-            }
-            Some('{') => {
-                self.chars.next();
-                Ok(Token::Lc)
-            }
-            Some('}') => {
-                self.chars.next();
-                Ok(Token::Rc)
-            }
-            Some(':') => {
-                self.chars.next();
-                match self.chars.peek() {
-                    Some('=') => {
-                        self.chars.next();
-                        Ok(Token::Assign)
-                    }
-                    _ => Ok(Token::Colon)
-                }
-            }
-            Some(',') => {
-                self.chars.next();
-                Ok(Token::Comma)
-            }
-            Some(';') | Some('\n') => {
-                self.chars.next();
-                Ok(Token::ExprEnd)
-            }
-            Some('.') => {
-                self.chars.next();
-                match self.chars.peek() {
-                    Some('.') => {
-                        self.chars.next();
-                        match self.chars.peek() {
-                            Some('.') => {
-                                self.chars.next();
-                                Ok(Token::Ellipsis)
-                            }
-                            _ => Ok(Token::Range)
-                        }
-                    }
-                    _ => Ok(Token::Dot)
-                }
-            }
-            Some('_') => {
-                self.chars.next();
-                Ok(Token::Underscore)
-            }
-            Some('~') => {
-                self.chars.next();
-                Ok(Token::Tilde)
-            }
-            Some('+') => {
-                self.chars.next();
-                Ok(Token::Add)
-            }
-            Some('-') => {
-                self.chars.next();
-                match self.chars.peek() {
-                    Some('>') => {
-                        self.chars.next();
-                        Ok(Token::Arrow)
-                    }
-                    _ => Ok(Token::Sub)
-                }
-            }
-            Some('*') => {
-                self.chars.next();
-                Ok(Token::Mul)
-
-            }
-            Some('/') => {
-                self.chars.next();
-                Ok(Token::Div)
-            }
-            Some('^') => {
-                self.chars.next();
-                Ok(Token::Exp)
-            }
-            Some('=') => {
-                self.chars.next();
-                match self.chars.peek() {
-                    Some('=') => {
-                        self.chars.next();
-                        Ok(Token::Eq)
-                    }
-                    Some('>') => {
-                        self.chars.next();
-                        Ok(Token::FatArrow)
-                    }
-                    _ => Ok(Token::Bind)
-                }
-            }
-            Some('!') => {
-                self.chars.next();
-                match self.chars.peek() {
-                    Some('=') => {
-                        self.chars.next();
-                        Ok(Token::Ne)
-                    }
-                    _ => Err(LexerErr::UnexpectedChar('!'))
-                }
-            }
-            Some('>') => {
-                self.chars.next();
-                match self.chars.peek() {
-                    Some('=') => {
-                        self.chars.next();
-                        Ok(Token::Ge)
-                    }
-                    _ => Ok(Token::Gt)
-                }
-            }
-            Some('<') => {
-                self.chars.next();
-                match self.chars.peek() {
-                    Some('>') => {
-                        self.chars.next();
-                        Ok(Token::Le)
-                    }
-                    _ => Ok(Token::Lt)
-                }
-            }
-            Some('&') => {
-                self.chars.next();
-                match self.chars.peek() {
-                    Some('&') => {
-                        self.chars.next();
-                        Ok(Token::And)
-                    }
-                    _ => Ok(Token::Intersection)
-                }
-            }
-            Some('|') => {
-                self.chars.next();
-                match self.chars.peek() {
-                    Some('|') => {
-                        self.chars.next();
-                        Ok(Token::Or)
-                    }
-                    _ => Ok(Token::Union)
-                }
-            }
-
             Some(&c) => {
-                Err(LexerErr::UnexpectedChar(c))
+                self.lex_others(c)
             }
             None => Ok(Token::EOF)
         }
