@@ -1,4 +1,6 @@
-use crate::lexer::Lexer;
+use std::{process::abort};
+
+use crate::{lexer::Lexer, parser::Parser};
 
 mod token;
 mod lexer;
@@ -10,14 +12,6 @@ fn main() {
     let src = std::fs::read_to_string(path).expect("Failed to read file");
 
     let mut lexer = Lexer::new(&src);
-    match lexer.tokens() {
-        Ok(tokens) => {
-            for token in tokens {
-                println!("{:?}", token);
-            }
-        }
-        Err(e) => {
-            eprintln!("Lexer error: {:?}", e);
-        }
-    }
+    let tokens: Vec<token::Token> = Vec::new();
+    let mut parser = Parser::new(&tokens);
 }
