@@ -6,6 +6,7 @@ use crate::token::Token;
 pub enum LexerErr {
     InvalidNumFormat,
     UnexpectedChar(char),
+    UnsupportedOperator(&'static str),
     UnterminatedStr,
 }
 
@@ -20,8 +21,6 @@ impl<'a> Lexer<'a> {
             chars: src.chars().peekable(),
 
             keywords_table: HashMap::from([
-                ("async"   , Token::Async),
-                ("await"   , Token::Await),
                 ("break"   , Token::Break),
                 ("continue", Token::Continue),
                 ("do"      , Token::Do),
@@ -35,6 +34,7 @@ impl<'a> Lexer<'a> {
                 ("mod"     , Token::Mod),
                 ("not"     , Token::Not),
                 ("return"  , Token::Return),
+                ("self"    , Token::Self_),
                 ("then"    , Token::Then),
                 ("type"    , Token::Type),
                 ("var"     , Token::Var),
@@ -106,7 +106,8 @@ impl<'a> Lexer<'a> {
     fn lex_id_or_keyword(&mut self) -> Result<Token, LexerErr> {
         let mut name = String::new();
         while let Some(&c) = self.chars.peek() {
-            if !(c.is_alphanumeric() || c == '_') {
+            // '!' is allowed in identifiers (though not as the first character)
+            if !(c.is_alphanumeric() || c == '_' || c == '!') {
                 break;
             }
             name.push(c);
@@ -121,7 +122,7 @@ impl<'a> Lexer<'a> {
 
     fn lex_others(&mut self, c: char) -> Result<Token, LexerErr> {
         match c {
-            // Lex operators & separators
+            // Lex separators & operators
             '(' => {
                 self.chars.next();
                 Ok(Token::Lp)
@@ -152,6 +153,10 @@ impl<'a> Lexer<'a> {
                     Some('=') => {
                         self.chars.next();
                         Ok(Token::Assign)
+                    }
+                    Some(':') => {
+                        self.chars.next();
+                        Ok(Token::DoubleColon)
                     }
                     _ => Ok(Token::Colon)
                 }
@@ -188,9 +193,19 @@ impl<'a> Lexer<'a> {
                 self.chars.next();
                 Ok(Token::Tilde)
             }
+            '@' => {
+                self.chars.next();
+                Ok(Token::At)
+            }
             '+' => {
                 self.chars.next();
-                Ok(Token::Add)
+                match self.chars.peek() {
+                    Some('+') => {
+                        self.chars.next();
+                        Ok(Token::Cons)
+                    }
+                    _ => Ok(Token::Add)
+                }
             }
             '-' => {
                 self.chars.next();
@@ -236,7 +251,7 @@ impl<'a> Lexer<'a> {
                         self.chars.next();
                         Ok(Token::Ne)
                     }
-                    _ => Err(LexerErr::UnexpectedChar('!'))
+                    _ => Err(LexerErr::UnsupportedOperator("!"))
                 }
             }
             '>' => {
@@ -278,6 +293,10 @@ impl<'a> Lexer<'a> {
                     }
                     _ => Ok(Token::Union)
                 }
+            }
+            '$' => {
+                self.chars.next();
+                Ok(Token::Pipeline)
             }
 
             other => {

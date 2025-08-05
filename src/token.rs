@@ -1,8 +1,6 @@
 #[derive(Debug, PartialEq, Clone)]
 pub enum Token {
     // Keywords
-    Async,
-    Await,
     Break,
     Continue,
     Do,
@@ -16,11 +14,31 @@ pub enum Token {
     Mod,
     Not,
     Return,
+    Self_,          // Avoid confusion with Rust `Self`
     Then,
     Type,
     Var,
     While,
     With,
+
+    // Separators
+    Lp,             // (
+    Rp,             // )
+    Lb,             // [
+    Rb,             // ]
+    Lc,             // {
+    Rc,             // }
+    Colon,          // :
+    DoubleColon,    // ::
+    Comma,          // ,
+    ExprEnd,        // ; or EOL
+    Dot,            // .
+    Ellipsis,       // ...
+    Underscore,     // _
+    Tilde,          // ~
+    At,             // @
+    Arrow,          // ->
+    FatArrow,       // =>
 
     // Operators
     Add,            // +
@@ -38,27 +56,12 @@ pub enum Token {
     Or,             // ||
     Intersection,   // &
     Union,          // |
+    Cons,           // ++
     Bind,           // =
     Assign,         // :=
     Range,          // ..
+    Pipeline,       // $
     
-    // Separators
-    Lp,             // (
-    Rp,             // )
-    Lb,             // [
-    Rb,             // ]
-    Lc,             // {
-    Rc,             // }
-    Colon,          // :
-    Comma,          // ,
-    ExprEnd,        // ; or EOL         
-    Dot,            // .
-    Ellipsis,       // ...
-    Underscore,     // _
-    Tilde,          // ~
-    Arrow,          // ->
-    FatArrow,       // =>
-
     // Literals
     StrLiteral(String),
     NumLiteral(i64),

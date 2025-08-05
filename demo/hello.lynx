@@ -1,14 +1,23 @@
 println("Hello, World!")
 
-for i in 1..100 (
-    f = i => j => i + j
-    incr = f(1, ~)
-)
+f = i => j => i + j
+incr = f(1, ~)
 
 var a = 1
 a := 2; b = a
 
-c = "\a\b\c\n\t\\\""
+c = "\abc\n\t\\\""
 # A comment
 # Another comment
 println(c)
+
+fn f(...args) = (
+    for i in args do
+        i $ println
+)
+
+fn len(l) =
+    match l with
+        [] -> 0,
+        car ++ cdr -> len(cdr) + 1
+assert_eq(len([1, 2, 3]), 3)
