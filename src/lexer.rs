@@ -1,14 +1,6 @@
 use std::{collections::HashMap, iter::Peekable, str::Chars};
 
-use crate::token::Token;
-
-#[derive(Debug)]
-pub enum LexerErr {
-    InvalidNumFormat,
-    UnexpectedChar(char),
-    UnsupportedOperator(&'static str),
-    UnterminatedStr,
-}
+use crate::{error::Error, token::Token};
 
 pub struct Lexer<'a> {
     chars: Peekable<Chars<'a>>,
@@ -61,7 +53,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn lex_str_literal(&mut self) -> Result<Token, LexerErr> {
+    fn lex_str_literal(&mut self) -> Result<Token, Error> {
         let mut s = String::new();
         self.chars.next();    // Skip opening quote
 
@@ -84,10 +76,10 @@ impl<'a> Lexer<'a> {
             }
         }
 
-        Err(LexerErr::UnterminatedStr) 
+        Err(Error::UnterminatedStr) 
     }
 
-    fn lex_num_literal(&mut self) -> Result<Token, LexerErr> {
+    fn lex_num_literal(&mut self) -> Result<Token, Error> {
         let mut num_str = String::new();
         while let Some(&c) = self.chars.peek() {
             if !c.is_ascii_digit() {
@@ -99,11 +91,11 @@ impl<'a> Lexer<'a> {
         if let Ok(num) = num_str.parse() {
             Ok(Token::NumLiteral(num))
         } else {
-            Err(LexerErr::InvalidNumFormat)
+            Err(Error::InvalidNumFormat)
         }
     }
 
-    fn lex_id_or_keyword(&mut self) -> Result<Token, LexerErr> {
+    fn lex_id_or_keyword(&mut self) -> Token {
         let mut name = String::new();
         while let Some(&c) = self.chars.peek() {
             // '!' is allowed in identifiers (though not as the first character)
@@ -115,12 +107,12 @@ impl<'a> Lexer<'a> {
         }
 
         match self.keywords_table.get(name.as_str()) {
-            Some(keyword_token) => Ok(keyword_token.to_owned()),
-            None => Ok(Token::Id(name)),
+            Some(keyword_token) => keyword_token.to_owned(),
+            None => Token::Id(name),
         }
     }
 
-    fn lex_others(&mut self, c: char) -> Result<Token, LexerErr> {
+    fn lex_others(&mut self, c: char) -> Result<Token, Error> {
         match c {
             // Lex separators & operators
             '(' => {
@@ -202,7 +194,7 @@ impl<'a> Lexer<'a> {
                 match self.chars.peek() {
                     Some('+') => {
                         self.chars.next();
-                        Ok(Token::Cons)
+                        Ok(Token::Concat)
                     }
                     _ => Ok(Token::Add)
                 }
@@ -251,7 +243,7 @@ impl<'a> Lexer<'a> {
                         self.chars.next();
                         Ok(Token::Ne)
                     }
-                    _ => Err(LexerErr::UnsupportedOperator("!"))
+                    _ => Err(Error::UnsupportedOperator("!"))
                 }
             }
             '>' => {
@@ -300,12 +292,12 @@ impl<'a> Lexer<'a> {
             }
 
             other => {
-                Err(LexerErr::UnexpectedChar(other))
+                Err(Error::UnexpectedChar(other))
             }
         }
     }
 
-    fn next_token(&mut self) -> Result<Token, LexerErr> {
+    fn next_token(&mut self) -> Result<Token, Error> {
         self.skip_ws();
 
         match self.chars.peek() {
@@ -320,7 +312,7 @@ impl<'a> Lexer<'a> {
                 self.lex_num_literal()
             }
             Some(&c) if c.is_alphabetic() || c == '_' => {
-                self.lex_id_or_keyword()
+                Ok(self.lex_id_or_keyword())
             }
             Some(&c) => {
                 self.lex_others(c)
@@ -328,23 +320,16 @@ impl<'a> Lexer<'a> {
             None => Ok(Token::EOF)
         }
     }
+}
 
-    pub fn tokens(&mut self) -> Result<Vec<Token>, LexerErr> {
-        let mut tokens = Vec::new();
-        loop {
-            match self.next_token() {
-                Ok(Token::EOF) => {
-                    tokens.push(Token::EOF);
-                    break;
-                }
-                Ok(token) => {
-                    tokens.push(token);
-                }
-                Err(e) => {
-                    return Err(e);
-                }
-            }
+impl<'a> Iterator for Lexer<'a> {
+    type Item = Result<Token, Error>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let next = self.next_token();
+        match next {
+            Ok(Token::EOF) => None,
+            _ => Some(next),
         }
-        Ok(tokens)
-    } 
+    }
 }

@@ -56,7 +56,7 @@ pub enum Token {
     Or,             // ||
     Intersection,   // &
     Union,          // |
-    Cons,           // ++
+    Concat,          // ++
     Bind,           // =
     Assign,         // :=
     Range,          // ..
