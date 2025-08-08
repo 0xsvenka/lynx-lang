@@ -1,12 +1,12 @@
 use std::{collections::HashMap, iter::Peekable, str::Chars};
 
-use crate::{error::Error, token::{Pos, Token}};
+use crate::{error::Error, token::{Pos, Span, Token, TokenKind}};
 
 pub struct Lexer<'a> {
     chars: Peekable<Chars<'a>>,
     pos: Pos,
 
-    keywords_table: HashMap<&'a str, Token>,
+    keywords_table: HashMap<&'a str, TokenKind>,
 }
 
 impl<'a> Lexer<'a> {
@@ -16,25 +16,25 @@ impl<'a> Lexer<'a> {
             pos: Pos(1, 1),
 
             keywords_table: HashMap::from([
-                ("break"   , Token::Break),
-                ("continue", Token::Continue),
-                ("do"      , Token::Do),
-                ("else"    , Token::Else),
-                ("fn"      , Token::Fn),
-                ("for"     , Token::For),
-                ("if"      , Token::If),
-                ("import"  , Token::Import),
-                ("in"      , Token::In),
-                ("match"   , Token::Match),
-                ("mod"     , Token::Mod),
-                ("not"     , Token::Not),
-                ("return"  , Token::Return),
-                ("self"    , Token::Self_),
-                ("then"    , Token::Then),
-                ("type"    , Token::Type),
-                ("var"     , Token::Var),
-                ("while"   , Token::While),
-                ("with"    , Token::With),
+                ("break"   , TokenKind::Break),
+                ("continue", TokenKind::Continue),
+                ("do"      , TokenKind::Do),
+                ("else"    , TokenKind::Else),
+                ("fn"      , TokenKind::Fn),
+                ("for"     , TokenKind::For),
+                ("if"      , TokenKind::If),
+                ("import"  , TokenKind::Import),
+                ("in"      , TokenKind::In),
+                ("match"   , TokenKind::Match),
+                ("mod"     , TokenKind::Mod),
+                ("not"     , TokenKind::Not),
+                ("return"  , TokenKind::Return),
+                ("self"    , TokenKind::Self_),
+                ("then"    , TokenKind::Then),
+                ("type"    , TokenKind::Type),
+                ("var"     , TokenKind::Var),
+                ("while"   , TokenKind::While),
+                ("with"    , TokenKind::With),
             ]),
         }
     }
@@ -73,15 +73,16 @@ impl<'a> Lexer<'a> {
     }
 
     fn lex_str_literal(&mut self) -> Result<Token, Error> {
-        let mut s = String::new();
         self.advance_in_same_line();    // Skip opening quote
         let start_pos = self.pos.to_owned();
+        let mut s = String::new();
 
         while let Some(&c) = self.chars.peek() {
             match c {
                 '"' => {    // Closing quote
                     self.advance_in_same_line();
-                    return Ok(Token::StrLiteral(s));
+                    return Ok(Token(TokenKind::StrLiteral(s),
+                            Span(start_pos, self.pos.to_owned())));
                 }
 
                 '\\' => {   // Escape sequence
@@ -125,7 +126,9 @@ impl<'a> Lexer<'a> {
     }
 
     fn lex_num_literal(&mut self) -> Result<Token, Error> {
+        let start_pos = Pos(self.pos.0, self.pos.1 + 1);
         let mut num_str = String::new();
+
         while let Some(&c) = self.chars.peek() {
             if !c.is_ascii_digit() {
                 break;
@@ -133,15 +136,18 @@ impl<'a> Lexer<'a> {
             num_str.push(c);
             self.advance_in_same_line();
         }
+
         if let Ok(num) = num_str.parse() {
-            Ok(Token::NumLiteral(num))
+            Ok(Token(TokenKind::NumLiteral(num), Span(start_pos, self.pos.to_owned())))
         } else {
-            Err(Error::InvalidNumFormat(self.pos.to_owned()))
+            Err(Error::InvalidNumFormat(Span(start_pos, self.pos.to_owned())))
         }
     }
 
     fn lex_id_or_keyword(&mut self) -> Token {
+        let start_pos = Pos(self.pos.0, self.pos.1 + 1);
         let mut name = String::new();
+
         while let Some(&c) = self.chars.peek() {
             // '!' is allowed in identifiers (though not as the first character)
             if !(c.is_alphanumeric() || c == '_' || c == '!') {
@@ -152,67 +158,70 @@ impl<'a> Lexer<'a> {
         }
 
         match self.keywords_table.get(name.as_str()) {
-            Some(keyword_token) => keyword_token.to_owned(),
-            None => Token::Id(name),
+            Some(keyword_token) =>
+                    Token(keyword_token.to_owned(), Span(start_pos, self.pos.to_owned())),
+            None => Token(TokenKind::Id(name), Span(start_pos, self.pos.to_owned()))
         }
     }
 
     fn lex_others(&mut self, c: char) -> Result<Token, Error> {
+        let start_pos = Pos(self.pos.0, self.pos.1 + 1);
+
         match c {
             // Lex separators & operators
             '(' => {
                 self.advance_in_same_line();
-                Ok(Token::Lp)
+                Ok(Token(TokenKind::Lp, Span(start_pos, self.pos.to_owned())))
             }
             ')' => {
                 self.advance_in_same_line();
-                Ok(Token::Rp)
+                Ok(Token(TokenKind::Rp, Span(start_pos, self.pos.to_owned())))
             }
             '[' => {
                 self.advance_in_same_line();
-                Ok(Token::Lb)
+                Ok(Token(TokenKind::Lb, Span(start_pos, self.pos.to_owned())))
             }
             ']' => {
                 self.advance_in_same_line();
-                Ok(Token::Rb)
+                Ok(Token(TokenKind::Rb, Span(start_pos, self.pos.to_owned())))
             }
             '{' => {
                 self.advance_in_same_line();
-                Ok(Token::Lc)
+                Ok(Token(TokenKind::Lc, Span(start_pos, self.pos.to_owned())))
             }
             '}' => {
                 self.advance_in_same_line();
-                Ok(Token::Rc)
+                Ok(Token(TokenKind::Rc, Span(start_pos, self.pos.to_owned())))
             }
             ':' => {
                 self.advance_in_same_line();
                 match self.chars.peek() {
                     Some('=') => {
                         self.advance_in_same_line();
-                        Ok(Token::Assign)
+                        Ok(Token(TokenKind::Assign, Span(start_pos, self.pos.to_owned())))
                     }
                     Some(':') => {
                         self.advance_in_same_line();
-                        Ok(Token::DoubleColon)
+                        Ok(Token(TokenKind::DoubleColon, Span(start_pos, self.pos.to_owned())))
                     }
-                    _ => Ok(Token::Colon)
+                    _ => Ok(Token(TokenKind::Colon, Span(start_pos, self.pos.to_owned())))
                 }
             }
             ',' => {
                 self.advance_in_same_line();
-                Ok(Token::Comma)
+                Ok(Token(TokenKind::Comma, Span(start_pos, self.pos.to_owned())))
             }
             ';' => {
                 self.advance_in_same_line();
-                Ok(Token::ExprEnd)
+                Ok(Token(TokenKind::ExprEnd, Span(start_pos, self.pos.to_owned())))
             }
             '\n' => {
                 self.advance_to_next_line();
-                Ok(Token::ExprEnd)
+                Ok(Token(TokenKind::ExprEnd, Span(start_pos, self.pos.to_owned())))
             }
             '\\' => {
                 self.advance_in_same_line();
-                Ok(Token::ExprContinue)
+                Ok(Token(TokenKind::ExprContinue, Span(start_pos, self.pos.to_owned())))
             }
             '.' => {
                 self.advance_in_same_line();
@@ -222,30 +231,30 @@ impl<'a> Lexer<'a> {
                         match self.chars.peek() {
                             Some('.') => {
                                 self.advance_in_same_line();
-                                Ok(Token::Ellipsis)
+                                Ok(Token(TokenKind::Ellipsis, Span(start_pos, self.pos.to_owned())))
                             }
-                            _ => Ok(Token::Range)
+                            _ => Ok(Token(TokenKind::Range, Span(start_pos, self.pos.to_owned())))
                         }
                     }
-                    _ => Ok(Token::Dot)
+                    _ => Ok(Token(TokenKind::Dot, Span(start_pos, self.pos.to_owned())))
                 }
             }
             '_' => {
                 self.advance_in_same_line();
-                Ok(Token::Underscore)
+                Ok(Token(TokenKind::Underscore, Span(start_pos, self.pos.to_owned())))
             }
             '?' => {
                 self.advance_in_same_line();
-                Ok(Token::Undefined)
+                Ok(Token(TokenKind::Undefined, Span(start_pos, self.pos.to_owned())))
             }
             '+' => {
                 self.advance_in_same_line();
                 match self.chars.peek() {
                     Some('+') => {
                         self.advance_in_same_line();
-                        Ok(Token::Concat)
+                        Ok(Token(TokenKind::Concat, Span(start_pos, self.pos.to_owned())))
                     }
-                    _ => Ok(Token::Add)
+                    _ => Ok(Token(TokenKind::Add, Span(start_pos, self.pos.to_owned())))
                 }
             }
             '-' => {
@@ -253,36 +262,36 @@ impl<'a> Lexer<'a> {
                 match self.chars.peek() {
                     Some('>') => {
                         self.advance_in_same_line();
-                        Ok(Token::Arrow)
+                        Ok(Token(TokenKind::Arrow, Span(start_pos, self.pos.to_owned())))
                     }
-                    _ => Ok(Token::Sub)
+                    _ => Ok(Token(TokenKind::Sub, Span(start_pos, self.pos.to_owned())))
                 }
             }
             '*' => {
                 self.advance_in_same_line();
-                Ok(Token::Mul)
+                Ok(Token(TokenKind::Mul, Span(start_pos, self.pos.to_owned())))
 
             }
             '/' => {
                 self.advance_in_same_line();
-                Ok(Token::Div)
+                Ok(Token(TokenKind::Div, Span(start_pos, self.pos.to_owned())))
             }
             '^' => {
                 self.advance_in_same_line();
-                Ok(Token::Exp)
+                Ok(Token(TokenKind::Exp, Span(start_pos, self.pos.to_owned())))
             }
             '=' => {
                 self.advance_in_same_line();
                 match self.chars.peek() {
                     Some('=') => {
                         self.advance_in_same_line();
-                        Ok(Token::Eq)
+                        Ok(Token(TokenKind::Eq, Span(start_pos, self.pos.to_owned())))
                     }
                     Some('>') => {
                         self.advance_in_same_line();
-                        Ok(Token::FatArrow)
+                        Ok(Token(TokenKind::FatArrow, Span(start_pos, self.pos.to_owned())))
                     }
-                    _ => Ok(Token::Bind)
+                    _ => Ok(Token(TokenKind::Bind, Span(start_pos, self.pos.to_owned())))
                 }
             }
             '!' => {
@@ -290,9 +299,10 @@ impl<'a> Lexer<'a> {
                 match self.chars.peek() {
                     Some('=') => {
                         self.advance_in_same_line();
-                        Ok(Token::Ne)
+                        Ok(Token(TokenKind::Ne, Span(start_pos, self.pos.to_owned())))
                     }
-                    _ => Err(Error::UnsupportedOperator(self.pos.to_owned(), "!"))
+                    _ => Err(Error::UnsupportedOperator(
+                            Span(start_pos, self.pos.to_owned()), "!"))
                 }
             }
             '>' => {
@@ -300,9 +310,9 @@ impl<'a> Lexer<'a> {
                 match self.chars.peek() {
                     Some('=') => {
                         self.advance_in_same_line();
-                        Ok(Token::Ge)
+                        Ok(Token(TokenKind::Ge, Span(start_pos, self.pos.to_owned())))
                     }
-                    _ => Ok(Token::Gt)
+                    _ => Ok(Token(TokenKind::Gt, Span(start_pos, self.pos.to_owned())))
                 }
             }
             '<' => {
@@ -310,9 +320,9 @@ impl<'a> Lexer<'a> {
                 match self.chars.peek() {
                     Some('>') => {
                         self.advance_in_same_line();
-                        Ok(Token::Le)
+                        Ok(Token(TokenKind::Le, Span(start_pos, self.pos.to_owned())))
                     }
-                    _ => Ok(Token::Lt)
+                    _ => Ok(Token(TokenKind::Lt, Span(start_pos, self.pos.to_owned())))
                 }
             }
             '&' => {
@@ -320,9 +330,9 @@ impl<'a> Lexer<'a> {
                 match self.chars.peek() {
                     Some('&') => {
                         self.advance_in_same_line();
-                        Ok(Token::And)
+                        Ok(Token(TokenKind::And, Span(start_pos, self.pos.to_owned())))
                     }
-                    _ => Ok(Token::Intersection)
+                    _ => Ok(Token(TokenKind::Intersection, Span(start_pos, self.pos.to_owned())))
                 }
             }
             '|' => {
@@ -330,22 +340,22 @@ impl<'a> Lexer<'a> {
                 match self.chars.peek() {
                     Some('|') => {
                         self.advance_in_same_line();
-                        Ok(Token::Or)
+                        Ok(Token(TokenKind::Or, Span(start_pos, self.pos.to_owned())))
                     }
-                    _ => Ok(Token::Union)
+                    _ => Ok(Token(TokenKind::Union, Span(start_pos, self.pos.to_owned())))
                 }
             }
             '@' => {
                 self.advance_in_same_line();
-                Ok(Token::At)
+                Ok(Token(TokenKind::At, Span(start_pos, self.pos.to_owned())))
             }
             '$' => {
                 self.advance_in_same_line();
-                Ok(Token::Pipeline)
+                Ok(Token(TokenKind::Pipeline, Span(start_pos, self.pos.to_owned())))
             }
             '~' => {
                 self.advance_in_same_line();
-                Ok(Token::Tilde)
+                Ok(Token(TokenKind::Tilde, Span(start_pos, self.pos.to_owned())))
             }
 
             other => {

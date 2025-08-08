@@ -5,14 +5,14 @@ println("Hello, World!")
 f = i => j => i + j
 incr = f(1, ~)
 
-var a = 1
+var a = 12345678
 a := 2; b = a
 
 c = "\abc\n\t\\\"
 ...and next line"
 # A comment
 # Another comment
-println(c)
+println(c) !
 
 type Point = { x = ?, y = ? }
 

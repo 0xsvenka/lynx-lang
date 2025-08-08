@@ -1,9 +1,7 @@
-use std::{process::abort};
-
-use crate::{lexer::Lexer, token::Token};
+use crate::lexer::Lexer;
 
 mod token;
-// mod expr;
+mod expr;
 mod error;
 mod lexer;
 // mod parser;
@@ -16,6 +14,9 @@ fn main() {
     let mut lexer = Lexer::new(&src);
     // let mut parser = Parser::new(lexer);
     for result in lexer {
-        println!("{result:?}");
+        match result {
+            Ok(token) => println!("{token:?}"),
+            Err(e) => println!("{e}")
+        }
     }
 }

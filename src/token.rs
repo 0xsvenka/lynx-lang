@@ -9,8 +9,17 @@ impl fmt::Display for Pos {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
-pub enum Token {    // TODO: Make each token remember its position in source code
+#[derive(Debug)]
+pub struct Span(pub Pos, pub Pos);      // (start_pos, end_pos)
+
+impl fmt::Display for Span {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{} - {}", self.0, self.1)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum TokenKind {
     // Keywords
     Break,
     Continue,
@@ -77,7 +86,10 @@ pub enum Token {    // TODO: Make each token remember its position in source cod
     
     // Literals
     StrLiteral(String),
-    NumLiteral(i64),
+    NumLiteral(i64),    // TODO: Support more kinds of number literals
 
     Id(String),
 }
+
+#[derive(Debug)]
+pub struct Token(pub TokenKind, pub Span);
