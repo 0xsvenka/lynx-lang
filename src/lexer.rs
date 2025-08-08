@@ -1,6 +1,6 @@
 use std::{collections::HashMap, iter::Peekable, str::Chars};
 
-use crate::{error::{Error, Pos}, token::Token};
+use crate::{error::Error, token::{Pos, Token}};
 
 pub struct Lexer<'a> {
     chars: Peekable<Chars<'a>>,
@@ -354,40 +354,32 @@ impl<'a> Lexer<'a> {
             }
         }
     }
-
-    fn next_token(&mut self) -> Result<Token, Error> {
-        self.skip_ws();
-
-        match self.chars.peek() {
-            Some('#') => {
-                self.skip_comment();
-                self.next_token()
-            }
-            Some('"') => {
-                self.lex_str_literal()
-            }
-            Some(&c) if c.is_ascii_digit() => {
-                self.lex_num_literal()
-            }
-            Some(&c) if c.is_alphabetic() || c == '_' => {
-                Ok(self.lex_id_or_keyword())
-            }
-            Some(&c) => {
-                self.lex_others(c)
-            }
-            None => Ok(Token::EOF)
-        }
-    }
 }
 
 impl<'a> Iterator for Lexer<'a> {
     type Item = Result<Token, Error>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let next = self.next_token();
-        match next {
-            Ok(Token::EOF) => None,
-            _ => Some(next),
+        self.skip_ws();
+
+        match self.chars.peek() {
+            Some('#') => {
+                self.skip_comment();
+                self.next()
+            }
+            Some('"') => {
+                Some(self.lex_str_literal())
+            }
+            Some(&c) if c.is_ascii_digit() => {
+                Some(self.lex_num_literal())
+            }
+            Some(&c) if c.is_alphabetic() || c == '_' => {
+                Some(Ok(self.lex_id_or_keyword()))
+            }
+            Some(&c) => {
+                Some(self.lex_others(c))
+            }
+            None => None,
         }
     }
 }

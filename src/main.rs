@@ -1,12 +1,12 @@
 use std::{process::abort};
 
-use crate::{lexer::Lexer, parser::Parser, token::Token};
+use crate::{lexer::Lexer, token::Token};
 
 mod token;
-mod expr;
+// mod expr;
 mod error;
 mod lexer;
-mod parser;
+// mod parser;
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -14,5 +14,8 @@ fn main() {
     let src = std::fs::read_to_string(path).expect("Failed to read file");
 
     let mut lexer = Lexer::new(&src);
-    let mut parser = Parser::new(lexer);
+    // let mut parser = Parser::new(lexer);
+    for result in lexer {
+        println!("{result:?}");
+    }
 }

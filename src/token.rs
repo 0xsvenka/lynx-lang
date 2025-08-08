@@ -1,3 +1,14 @@
+use std::fmt;
+
+#[derive(Debug, Clone)]
+pub struct Pos(pub usize, pub usize);   // (line, column)
+
+impl fmt::Display for Pos {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}:{}", self.0, self.1)
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum Token {    // TODO: Make each token remember its position in source code
     // Keywords
@@ -69,6 +80,4 @@ pub enum Token {    // TODO: Make each token remember its position in source cod
     NumLiteral(i64),
 
     Id(String),
-
-    EOF,
 }

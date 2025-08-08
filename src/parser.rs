@@ -1,16 +1,15 @@
 use std::iter::Peekable;
-use std::slice::Iter;
 
 use crate::{error::Error, expr::Expr, lexer::Lexer, token::Token};
 
 pub struct Parser<'a> {
-    tokens: Peekable<Iter<'a, >>
+    tokens: Peekable<Lexer<'a>>,
 }
 
 impl<'a> Parser<'a> {
-    pub fn new(tokens: &'a [Token]) -> Self {
+    pub fn new(lexer: Lexer<'a>) -> Self {
         Parser {
-            tokens: tokens.iter().peekable(),
+            tokens: lexer.peekable(),
         }
     }
 

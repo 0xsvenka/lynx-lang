@@ -1,13 +1,6 @@
 use std::{error, fmt};
 
-#[derive(Debug, Clone)]
-pub struct Pos(pub usize, pub usize);   // (line, column)
-
-impl fmt::Display for Pos {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}:{}", self.0, self.1)
-    }
-}
+use crate::token::Pos;
 
 #[derive(Debug)]
 pub enum Error {
@@ -36,14 +29,3 @@ impl fmt::Display for Error {
 }
 
 impl error::Error for Error {}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_pos() {
-        let pos = Pos(0, 1);
-        assert_eq!(format!("{pos}"), "0:1");
-    }
-}
