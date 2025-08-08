@@ -1,9 +1,11 @@
 use std::{collections::HashMap, iter::Peekable, str::Chars};
 
-use crate::{error::Error, token::Token};
+use crate::{error::{Error, Pos}, token::Token};
 
 pub struct Lexer<'a> {
     chars: Peekable<Chars<'a>>,
+    pos: Pos,
+
     keywords_table: HashMap<&'a str, Token>,
 }
 
@@ -11,6 +13,7 @@ impl<'a> Lexer<'a> {
     pub fn new(src: &'a str) -> Self {
         Self {
             chars: src.chars().peekable(),
+            pos: Pos(1, 1),
 
             keywords_table: HashMap::from([
                 ("break"   , Token::Break),
@@ -36,47 +39,89 @@ impl<'a> Lexer<'a> {
         }
     }
 
+    #[inline]
+    fn advance_in_same_line(&mut self) {
+        self.pos.1 += 1;
+        self.chars.next();
+    }
+
+    #[inline]
+    fn advance_to_next_line(&mut self) {
+        self.pos.0 += 1;
+        self.pos.1 = 0;     // We haven't come to the first character of the next line yet
+        self.chars.next();
+    }
+
     fn skip_ws(&mut self) {
         while let Some(&c) = self.chars.peek() {
             if !c.is_whitespace() || c == '\n' {
                 break;
             }
-            self.chars.next();
+            self.advance_in_same_line();
         }
     }
 
     fn skip_comment(&mut self) {
-        while let Some(c) = self.chars.next() {
+        while let Some(&c) = self.chars.peek() {
             if c == '\n' {
+                self.advance_to_next_line();
                 break;
+            } else {
+                self.advance_in_same_line();
             }
         }
     }
 
     fn lex_str_literal(&mut self) -> Result<Token, Error> {
         let mut s = String::new();
-        self.chars.next();    // Skip opening quote
+        self.advance_in_same_line();    // Skip opening quote
+        let start_pos = self.pos.to_owned();
 
-        while let Some(c) = self.chars.next() {
+        while let Some(&c) = self.chars.peek() {
             match c {
-                '"' => return Ok(Token::StrLiteral(s)),    // Closing quote
+                '"' => {    // Closing quote
+                    self.advance_in_same_line();
+                    return Ok(Token::StrLiteral(s));
+                }
 
                 '\\' => {   // Escape sequence
-                    if let Some(escaped) = self.chars.next() {
-                        s.push(match escaped {
-                            'n' => '\n',
-                            't' => '\t',
-                            // TODO: support more escape sequences...
-                            _ => escaped,
-                        });
+                    self.advance_in_same_line();
+                    match self.chars.peek() {
+                        Some('n') => {
+                            self.advance_in_same_line();
+                            s.push('\n');
+                        }
+                        Some('t') => {
+                            self.advance_in_same_line();
+                            s.push('\t');
+                        }
+                        // TODO: support more escape sequences...
+
+                        Some('\n') => {
+                            self.advance_to_next_line();
+                            s.push('\n');
+                        }
+                        Some(&escaped) => {
+                            self.advance_in_same_line();
+                            s.push(escaped);
+                        }
+                        None => {}
                     }
                 }
 
-                _ => s.push(c),
+                // String literals can occupy multiple lines
+                '\n' => {
+                    self.advance_to_next_line();
+                    s.push('\n');
+                }
+                _ => {
+                    self.advance_in_same_line();
+                    s.push(c);
+                }
             }
         }
 
-        Err(Error::UnterminatedStr) 
+        Err(Error::UnterminatedStr(start_pos)) 
     }
 
     fn lex_num_literal(&mut self) -> Result<Token, Error> {
@@ -86,12 +131,12 @@ impl<'a> Lexer<'a> {
                 break;
             }
             num_str.push(c);
-            self.chars.next();
+            self.advance_in_same_line();
         }
         if let Ok(num) = num_str.parse() {
             Ok(Token::NumLiteral(num))
         } else {
-            Err(Error::InvalidNumFormat)
+            Err(Error::InvalidNumFormat(self.pos.to_owned()))
         }
     }
 
@@ -103,7 +148,7 @@ impl<'a> Lexer<'a> {
                 break;
             }
             name.push(c);
-            self.chars.next();
+            self.advance_in_same_line();
         }
 
         match self.keywords_table.get(name.as_str()) {
@@ -116,59 +161,67 @@ impl<'a> Lexer<'a> {
         match c {
             // Lex separators & operators
             '(' => {
-                self.chars.next();
+                self.advance_in_same_line();
                 Ok(Token::Lp)
             }
             ')' => {
-                self.chars.next();
+                self.advance_in_same_line();
                 Ok(Token::Rp)
             }
             '[' => {
-                self.chars.next();
+                self.advance_in_same_line();
                 Ok(Token::Lb)
             }
             ']' => {
-                self.chars.next();
+                self.advance_in_same_line();
                 Ok(Token::Rb)
             }
             '{' => {
-                self.chars.next();
+                self.advance_in_same_line();
                 Ok(Token::Lc)
             }
             '}' => {
-                self.chars.next();
+                self.advance_in_same_line();
                 Ok(Token::Rc)
             }
             ':' => {
-                self.chars.next();
+                self.advance_in_same_line();
                 match self.chars.peek() {
                     Some('=') => {
-                        self.chars.next();
+                        self.advance_in_same_line();
                         Ok(Token::Assign)
                     }
                     Some(':') => {
-                        self.chars.next();
+                        self.advance_in_same_line();
                         Ok(Token::DoubleColon)
                     }
                     _ => Ok(Token::Colon)
                 }
             }
             ',' => {
-                self.chars.next();
+                self.advance_in_same_line();
                 Ok(Token::Comma)
             }
-            ';' | '\n' => {
-                self.chars.next();
+            ';' => {
+                self.advance_in_same_line();
                 Ok(Token::ExprEnd)
             }
+            '\n' => {
+                self.advance_to_next_line();
+                Ok(Token::ExprEnd)
+            }
+            '\\' => {
+                self.advance_in_same_line();
+                Ok(Token::ExprContinue)
+            }
             '.' => {
-                self.chars.next();
+                self.advance_in_same_line();
                 match self.chars.peek() {
                     Some('.') => {
-                        self.chars.next();
+                        self.advance_in_same_line();
                         match self.chars.peek() {
                             Some('.') => {
-                                self.chars.next();
+                                self.advance_in_same_line();
                                 Ok(Token::Ellipsis)
                             }
                             _ => Ok(Token::Range)
@@ -178,121 +231,126 @@ impl<'a> Lexer<'a> {
                 }
             }
             '_' => {
-                self.chars.next();
+                self.advance_in_same_line();
                 Ok(Token::Underscore)
             }
-            '~' => {
-                self.chars.next();
-                Ok(Token::Tilde)
-            }
-            '@' => {
-                self.chars.next();
-                Ok(Token::At)
+            '?' => {
+                self.advance_in_same_line();
+                Ok(Token::Undefined)
             }
             '+' => {
-                self.chars.next();
+                self.advance_in_same_line();
                 match self.chars.peek() {
                     Some('+') => {
-                        self.chars.next();
+                        self.advance_in_same_line();
                         Ok(Token::Concat)
                     }
                     _ => Ok(Token::Add)
                 }
             }
             '-' => {
-                self.chars.next();
+                self.advance_in_same_line();
                 match self.chars.peek() {
                     Some('>') => {
-                        self.chars.next();
+                        self.advance_in_same_line();
                         Ok(Token::Arrow)
                     }
                     _ => Ok(Token::Sub)
                 }
             }
             '*' => {
-                self.chars.next();
+                self.advance_in_same_line();
                 Ok(Token::Mul)
 
             }
             '/' => {
-                self.chars.next();
+                self.advance_in_same_line();
                 Ok(Token::Div)
             }
             '^' => {
-                self.chars.next();
+                self.advance_in_same_line();
                 Ok(Token::Exp)
             }
             '=' => {
-                self.chars.next();
+                self.advance_in_same_line();
                 match self.chars.peek() {
                     Some('=') => {
-                        self.chars.next();
+                        self.advance_in_same_line();
                         Ok(Token::Eq)
                     }
                     Some('>') => {
-                        self.chars.next();
+                        self.advance_in_same_line();
                         Ok(Token::FatArrow)
                     }
                     _ => Ok(Token::Bind)
                 }
             }
             '!' => {
-                self.chars.next();
+                self.advance_in_same_line();
                 match self.chars.peek() {
                     Some('=') => {
-                        self.chars.next();
+                        self.advance_in_same_line();
                         Ok(Token::Ne)
                     }
-                    _ => Err(Error::UnsupportedOperator("!"))
+                    _ => Err(Error::UnsupportedOperator(self.pos.to_owned(), "!"))
                 }
             }
             '>' => {
-                self.chars.next();
+                self.advance_in_same_line();
                 match self.chars.peek() {
                     Some('=') => {
-                        self.chars.next();
+                        self.advance_in_same_line();
                         Ok(Token::Ge)
                     }
                     _ => Ok(Token::Gt)
                 }
             }
             '<' => {
-                self.chars.next();
+                self.advance_in_same_line();
                 match self.chars.peek() {
                     Some('>') => {
-                        self.chars.next();
+                        self.advance_in_same_line();
                         Ok(Token::Le)
                     }
                     _ => Ok(Token::Lt)
                 }
             }
             '&' => {
-                self.chars.next();
+                self.advance_in_same_line();
                 match self.chars.peek() {
                     Some('&') => {
-                        self.chars.next();
+                        self.advance_in_same_line();
                         Ok(Token::And)
                     }
                     _ => Ok(Token::Intersection)
                 }
             }
             '|' => {
-                self.chars.next();
+                self.advance_in_same_line();
                 match self.chars.peek() {
                     Some('|') => {
-                        self.chars.next();
+                        self.advance_in_same_line();
                         Ok(Token::Or)
                     }
                     _ => Ok(Token::Union)
                 }
             }
+            '@' => {
+                self.advance_in_same_line();
+                Ok(Token::At)
+            }
             '$' => {
-                self.chars.next();
+                self.advance_in_same_line();
                 Ok(Token::Pipeline)
+            }
+            '~' => {
+                self.advance_in_same_line();
+                Ok(Token::Tilde)
             }
 
             other => {
-                Err(Error::UnexpectedChar(other))
+                self.advance_in_same_line();
+                Err(Error::UnexpectedChar(self.pos.to_owned(), other))
             }
         }
     }

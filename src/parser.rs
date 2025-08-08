@@ -4,7 +4,7 @@ use std::slice::Iter;
 use crate::{error::Error, expr::Expr, lexer::Lexer, token::Token};
 
 pub struct Parser<'a> {
-    tokens: Lexer,
+    tokens: Peekable<Iter<'a, >>
 }
 
 impl<'a> Parser<'a> {

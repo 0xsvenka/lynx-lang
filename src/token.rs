@@ -1,5 +1,5 @@
 #[derive(Debug, PartialEq, Clone)]
-pub enum Token {
+pub enum Token {    // TODO: Make each token remember its position in source code
     // Keywords
     Break,
     Continue,
@@ -32,13 +32,12 @@ pub enum Token {
     DoubleColon,    // ::
     Comma,          // ,
     ExprEnd,        // ; or EOL
+    ExprContinue,   // \
     Dot,            // .
-    Ellipsis,       // ...
     Underscore,     // _
-    Tilde,          // ~
-    At,             // @
     Arrow,          // ->
     FatArrow,       // =>
+    Undefined,      // ?
 
     // Operators
     Add,            // +
@@ -56,11 +55,14 @@ pub enum Token {
     Or,             // ||
     Intersection,   // &
     Union,          // |
-    Concat,          // ++
+    Concat,         // ++
     Bind,           // =
     Assign,         // :=
     Range,          // ..
+    Ellipsis,       // ...
+    At,             // @
     Pipeline,       // $
+    Tilde,          // ~
     
     // Literals
     StrLiteral(String),
