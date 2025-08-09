@@ -7,8 +7,8 @@ mod lexer;
 // mod parser;
 
 fn main() {
-    let args: Vec<String> = std::env::args().collect();
-    let path = &args[1];
+    // TODO: Handle the situations where wrong args are given
+    let path = std::env::args_os().nth(1).unwrap();
     let src = std::fs::read_to_string(path).expect("Failed to read file");
 
     let mut lexer = Lexer::new(&src);

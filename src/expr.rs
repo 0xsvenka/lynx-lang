@@ -1,16 +1,24 @@
 #[derive(Debug)]
 pub enum Expr {
-    Number(i64),
-    Variable(String),
+    Num(i64),
+    Str(String),
+
+    Id(String),
+
     Binary {
         left: Box<Expr>,
         op: BinaryOp,
         right: Box<Expr>,
     },
-    Unary {
-        op: UnaryOp,
+    Prefix {
+        op: PrefixOp,
         expr: Box<Expr>,
     },
+    Suffix {
+        expr: Box<Expr>,
+        op: SuffixOp,
+    },
+
     If {
         condition: Box<Expr>,
         then_branch: Box<Expr>,
@@ -26,6 +34,7 @@ pub enum Expr {
         update: Box<Expr>,
         body: Box<Expr>,
     },
+    
     Block {
         exprs: Vec<Expr>,
     },
@@ -38,9 +47,30 @@ pub enum BinaryOp {
     Mul,
     Div,
     Exp,
+    Eq,
+    Ne,
+    Gt,
+    Lt,
+    Ge,
+    Le,
+    And,
+    Or,
+    Intersection,
+    Union,
+    Concat,
+    Bind,
+    Assign,
+    Range,
+    Pipeline,
 }
 
 #[derive(Debug)]
-pub enum UnaryOp {
+pub enum PrefixOp {
     Neg,
+    Ellipsis,
+}
+
+#[derive(Debug)]
+pub enum SuffixOp {
+    Ellipsis,
 }
