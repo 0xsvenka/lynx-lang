@@ -8,11 +8,11 @@ incr = f(1, ~)
 var a = 12345678
 a := 2; b = a
 
-c = "\abc\n\t\\\"
+c = "bc\n\t\\\"
 ...and next line"
 # A comment
 # Another comment
-println(c) !
+println(c)
 
 type Point = { x = ?, y = ? }
 
@@ -25,5 +25,5 @@ $ println
 fn len(l) =
     match l with
         [] -> 0,
-        [head, ...tail] -> len(tail) + 1
+        [_, ...tail] -> len(tail) + 1
 assert_eq(len([1, 2, 3]), 3)

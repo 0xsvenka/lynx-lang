@@ -7,7 +7,8 @@ pub enum Error {
     // Lexing errors
     InvalidNumFormat(Span),
     UnexpectedChar(Pos, char),
-    UnsupportedOperator(Span, &'static str),
+    UnknownEscapeSeq(Span, String),
+    UnsupportedOperator(Span, String),
     UnterminatedStr(Pos),       // Indicates the starting position of the string
 
     // Parsing errors
@@ -20,6 +21,8 @@ impl fmt::Display for Error {
                 write!(f, "Lexing Error: Invalid number format at {span}"),
             Error::UnexpectedChar(pos, c) =>
                 write!(f, "Lexing Error: Unexpected character `{c}` at {pos}"),
+            Error::UnknownEscapeSeq(span, s) =>
+                write!(f, "Lexing Error: Unknown escape sequence `{s}` at {span}"),
             Error::UnsupportedOperator(span, s) =>
                 write!(f, "Lexing Error: Unsupported operator `{s}` at {span}"),
             Error::UnterminatedStr(pos) =>

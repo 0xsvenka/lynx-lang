@@ -1,4 +1,4 @@
-use crate::lexer::Lexer;
+use crate::{lexer::Lexer};
 
 mod token;
 mod expr;
@@ -15,8 +15,12 @@ fn main() {
     // let mut parser = Parser::new(lexer);
     for result in lexer {
         match result {
-            Ok(token) => println!("{token:?}"),
-            Err(e) => println!("{e}")
+            Ok(token) =>
+                println!("{token:?}"),
+            Err(e) => {
+                println!("{e}");
+                break;
+            }
         }
     }
 }
