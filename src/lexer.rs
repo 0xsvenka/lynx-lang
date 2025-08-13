@@ -137,11 +137,11 @@ impl<'a> Lexer<'a> {
                             return Err(Error::UnterminatedStr(start_pos.to_owned()))
                         }
                     };
-                    
+
                     s.push(escaped_ch);
                 }
 
-                // String literals can occupy multiple lines
+                // String literals may occupy multiple lines
                 Some('\n') => {
                     self.advance_to_next_line();
                     s.push('\n');
