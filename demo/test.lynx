@@ -2,8 +2,8 @@ import std.math
 
 println("Hello, World!")
 
-f = i => j => i + j
-incr = f(1, ~)
+f: Int -> Int -> Int = i => j => i + j
+incr = f(1)
 
 var a = 12345678
 a := 2; b = a
@@ -14,15 +14,13 @@ c = "bc\n\t\\\"
 # Another comment
 println(c)
 
-type Point = { x = ?, y = ? }
-
 (1..100).to_list() \
-.map(i => i + 1) \
-.filter(math.is_prime) \
-.reduce((+)) \
+$ map(i => i + 1) \
+$ filter(math.is_prime) \
+$ reduce((+)) \
 $ println
 
-fn len(l) =
+fn len(l: List): Int =
     match l with
         [] -> 0,
         [_, ...tail] -> len(tail) + 1

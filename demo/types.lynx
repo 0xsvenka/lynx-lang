@@ -1,0 +1,26 @@
+type Tree@T = Leaf(_: T) | Node(_: List@Tree@T)
+
+type Option@T = Some(_: T) | None
+
+type Pair@(A, B) = Pair(_: {    # `Pair` is the the name of both the type
+                                # constructor and the data constructor
+    first: A
+    second: B
+    
+    fn new(first: A, second: B) = Pair({ first, second })
+
+    fn _1(self) = first         # The return type can be omitted and inferred
+    fn _2(self) = second
+
+    fn f(self, n: Int) = ()
+})
+
+p = Pair::new(1, "one")
+assert_eq(type_of(Pair@(Int, Str)::_1), Pair@(Int, Str) -> Int)
+assert_eq(Pair@(Int, Str)::f(p), p.f)   # Binding to the `self` param
+
+type Expr@T =                                       # GADT
+    IntExpr(_: Int): Expr@Int
+  | BoolExpr(_: Bool): Expr@Bool
+  | AddExpr(_: Expr@Int, _: Expr@Int): Expr@Int
+  | EqExpr@(T')(_: Expr@T', _: Expr@T'): Expr@Bool  # T and T' are distinct types

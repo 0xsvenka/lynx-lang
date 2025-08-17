@@ -26,6 +26,15 @@ impl<'a> Parser<'a> {
 
         while let Some(token) = self.tokens.peek() {
             match token {
+                Token::Add | Token::Sub => {
+
+                }
+                Token::Mul | Token::Div => {
+
+                }
+                Token::Exp => {
+                    
+                }
                 Token::Plus | Token::Minus => {
                     let op = match self.tokens.next().unwrap() {
                         Token::Plus => Op::Add,

@@ -1,10 +1,10 @@
-use crate::{lexer::Lexer};
+use crate::{lexer::Lexer, parser::Parser};
 
 mod token;
 mod expr;
 mod error;
 mod lexer;
-// mod parser;
+mod parser;
 
 fn main() {
     // TODO: Handle the situations where wrong args are given
@@ -12,15 +12,5 @@ fn main() {
     let src = std::fs::read_to_string(path).expect("Failed to read file");
 
     let mut lexer = Lexer::new(&src);
-    // let mut parser = Parser::new(lexer);
-    for result in lexer {
-        match result {
-            Ok(token) =>
-                println!("{token:?}"),
-            Err(e) => {
-                println!("{e}");
-                break;
-            }
-        }
-    }
+    let mut parser = Parser::new(lexer);
 }
