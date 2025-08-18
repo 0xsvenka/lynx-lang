@@ -185,7 +185,7 @@ impl<'a> Lexer<'a> {
             // '!' is allowed in identifiers (though not as the first character)
             if !(c.is_alphanumeric() || c == '_' || c == '!') {
                 break;
-            }
+            }   
             name.push(c);
             self.advance_in_same_line();
         }
