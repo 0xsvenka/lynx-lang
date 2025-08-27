@@ -20,75 +20,85 @@ impl fmt::Display for Span {
 
 #[derive(Debug, Clone)]
 pub enum TokenKind {
-    // Keywords
-    Break,
-    Continue,
-    Do,
-    Else,
-    Fn,
-    For,
-    If,
-    Import,
-    In,
-    Match,
-    Mod,
-    Not,
-    Return,
-    Self_,          // Avoid confusion with Rust `Self`
-    Then,
-    Type,
-    Var,
-    While,
-    With,
 
-    // Separators
-    Lp,             // (
-    Rp,             // )
-    Lb,             // [
-    Rb,             // ]
-    Lc,             // {
-    Rc,             // }
-    Colon,          // :
-    DoubleColon,    // ::
-    Comma,          // ,
-    ExprEnd,        // ; or EOL
-    ExprContinue,   // \
-    Dot,            // .
-    Underscore,     // _
-    Arrow,          // ->
-    FatArrow,       // =>
-    Undefined,      // ?
-
-    // Operators
-    Add,            // +
-    Sub,            // -
-    Mul,            // *
-    Div,            // /
-    Exp,            // ^
-    Eq,             // ==
-    Ne,             // !=
-    Gt,             // >
-    Lt,             // <
-    Ge,             // >=
-    Le,             // <=
-    And,            // &&
-    Or,             // ||
-    Intersection,   // &
-    Union,          // |
-    Concat,         // ++
-    Bind,           // =
-    Assign,         // :=
-    Range,          // ..
-    Ellipsis,       // ...
-    At,             // @
-    Pipeline,       // $
-    Tilde,          // ~
-    
-    // Literals
-    StrLiteral(String),
-    NumLiteral(i64),    // TODO: Support more kinds of number literals
-
+    /// An identifier starting with a lowercase letter or `_`,
+    /// possibly containing alphanumeric characters, `'`, `!` or `_`.
     Id(String),
+
+    /// A constructor identifier starting with an uppercase letter,
+    /// possibly containing alphanumeric characters, `'`, `!` or `_`.
+    ConId(String),
+
+    /// Interger literal
+    Int(i64),
+
+    /// Floating-point number literal
+    Float(f64),
+
+    /// Character literal
+    Char(char),
+
+    /// String literal
+    Str(String),
+
+    /// ## Keywords
+    /// The keyword `case`
+    Case,
+    /// The keyword `fn`
+    Fn,
+    /// The keyword `import`
+    Import,
+    /// The keyword `of`
+    Of,
+    /// The keyword `self`
+    SelfLower,
+    /// The keyword `Self`
+    SelfUpper,
+    /// The keyword `type`
+    Type,
+    /// The keyword `var`
+    Var,
+    // Symbolic keywords are also keywords
+    /// `:`
+    Colon,
+    /// `::`
+    DoubleColon,
+    /// `.`
+    Dot,
+    /// `_`
+    Underscore,
+    /// `->`
+    Arrow,
+    /// `=>`
+    FatArrow,
+    /// `=`
+    Bind,
+    /// `:=`
+    Assign,
+    /// `@`
+    At,
+    /// `|`
+    Pipe,
+
+    /// ## Separators
+    /// Left parenthesis `(`
+    Lp,
+    /// Right parenthesis `)`
+    Rp,
+    /// Left bracket `[`
+    Lb,
+    /// Right bracket `]`
+    Rb,
+    /// Left curly brace `{`
+    Lc,
+    /// Right curly brace `}`
+    Rc,
+    /// `,`
+    Comma,
+    /// `;` or `EOL`
+    ExprEnd,
+    /// `\`
+    ExprContinue,
 }
 
 #[derive(Debug)]

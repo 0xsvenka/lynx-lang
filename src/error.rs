@@ -12,6 +12,9 @@ pub enum Error {
     UnterminatedStr(Pos),       // Indicates the starting position of the string
 
     // Parsing errors
+    UnexpectedToken(String),
+    UnexpectedEOF,
+    InvalidToken(String),
 }
 
 impl fmt::Display for Error {
@@ -27,6 +30,7 @@ impl fmt::Display for Error {
                 write!(f, "Lexing Error: Unsupported operator `{s}` at {span}"),
             Error::UnterminatedStr(pos) =>
                 write!(f, "Lexing Error: Unterminated string starting at {pos}"),
+            _ => write!(f, ""),     // TODO: Add support for other errors
         }
     }
 }

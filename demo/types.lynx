@@ -1,30 +1,25 @@
-type Tree T = Leaf T | Node (List Tree T)
+Option : Type -> Type               # PascalCase indicates constructor
+Option a =
+    Some : %~a -> a -> Option a     # In a type context, we should write `type ~ term`
+                                    #     instead of `term : type`; moreover,
+                                    #     `%~a` is syntax sugar for `%(Type ~ a)`
+  | None : %~a -> Option a
 
-type Option T = Some T | None
+IntList = [|Int|]                   # `[|a|]` is syntax sugar for `List a`
 
-type Point = Point% Int Int     # Product type with anonymous fields
-origin = Point% 0 0
+Expr : Type -> Type                 # An example of GADT
+Expr a =
+    IntExpr : Int -> Expr Int
+  | BoolExpr : Bool -> Expr Bool
+  | AddExpr : Expr Int -> Expr Int -> Expr Int
+  | EqExpr : Expr a' -> Expr a' -> Expr Bool
 
-type Pair A B = {         # Alias for a record type
-    first: A
-    second: B
-    
-    fn new (first: A) (second: B) = { first, second }
+len : %(Nat ~ n) -> %~a -> List n a -> Nat      # Dependent type
+len [] = 0
+len (_ +: tail) = 1 + len tail
 
-    fn get_1st self = self.first    # The return type can be omitted and inferred
-    fn get_2nd self = self.second
+[] : %~a -> List a                  # Polymorphic `[]`
+[] = %a => Nil %a                   # TODO: More distinction, not just `%` for all cases
 
-    fn f self (n: Int) = ()
-}
-
-p = Pair::new 1 "one"
-assert_eq (type_of (Pair Int Str)::get_1st) (Pair Int Str) -> Int
-assert_eq ((Pair Int Str)::f p) p.f     # Binding to the `self` param
-                                        # Also, `.` and `::` have higher
-                                        # precedence than function application
-
-type Expr T =                   # GADT
-    IntExpr: Int -> Expr Int
-  | BoolExpr: Bool -> Expr Bool
-  | AddExpr: Expr Int -> Expr Int -> Expr Int
-  | EqExpr: Expr T' -> Expr T' -> Expr Bool     # T and T' are distinct types
+(+:) : %(Nat ~ n) -> %~a -> a -> List n a -> List (n+1) a
+(+:) = %n => %a => head => tail => Cons head tail
