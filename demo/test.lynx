@@ -15,9 +15,9 @@ c = "bc\n\t\\\"
 println c
 
 (1..100) |> List::from \
-|> map(i => i + 1) \
-|> filter(math.is_prime) \
-|> reduce((+)) \
+|> map (i => i + 1) \
+|> filter math.is_prime \
+|> reduce (+) \
 |> println
 
 assert_eq (len [1, 2, 3]) 3

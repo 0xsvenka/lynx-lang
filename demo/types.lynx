@@ -1,15 +1,13 @@
 Option : Type -> Type               # PascalCase indicates constructor
-Option a =
-    Some : %~a -> a -> Option a     # In a type context, we should write `type ~ term`
-                                    #     instead of `term : type`; moreover,
-                                    #     `%~a` is syntax sugar for `%(Type ~ a)`
+Option =
+  | Some : %~a -> a -> Option a     # In a type context, we should write `type ~ term`
+                                    #   instead of `term : type`; moreover,
+                                    #   `%~a` is syntax sugar for `%(Type ~ a)`
   | None : %~a -> Option a
 
-IntList = [|Int|]                   # `[|a|]` is syntax sugar for `List a`
-
 Expr : Type -> Type                 # An example of GADT
-Expr a =
-    IntExpr : Int -> Expr Int
+Expr =
+  | IntExpr : Int -> Expr Int
   | BoolExpr : Bool -> Expr Bool
   | AddExpr : Expr Int -> Expr Int -> Expr Int
   | EqExpr : Expr a' -> Expr a' -> Expr Bool
@@ -18,8 +16,29 @@ len : %(Nat ~ n) -> %~a -> List n a -> Nat      # Dependent type
 len [] = 0
 len (_ +: tail) = 1 + len tail
 
-[] : %~a -> List a                  # Polymorphic `[]`
-[] = %a => Nil %a                   # TODO: More distinction, not just `%` for all cases
+List : Nat -> Type -> Type
+List =
+  | Nil : %~a -> List 0 a
+  | Cons : %(Pos ~ n) -> %~a -> a -> List n a -> List (n+1) a
 
-(+:) : %(Nat ~ n) -> %~a -> a -> List n a -> List (n+1) a
-(+:) = %n => %a => head => tail => Cons head tail
+Person = {| name : Str, age : Nat |}    # `{|` and `|}` construct record types
+
+Point = (|Int, Int|)                    # `(|` and `|)` construct tuple types
+
+Str = [|Char|]                          # `[|` and `|]` construct `List` types
+
+p : Person
+p = { name = "Emma", age = 35 }         # `{` and `}` with `=` construct records
+
+word_len : Map Str Nat 
+word_len = { "name": 4, "age": 3 }      # `{` and `}` with `:` construct `Map`s
+
+origin : Point
+origin = (0, 0)                         # `(` and `)` construct tuples
+single_int : (|Int|)
+single_int = (1,)                       # Tuple with one single field, which must
+                                        #   be followed by a trailing comma
+
+greeting : Str
+greeting = ['H', 'e', 'l', 'l', 'o']    # `[` and `]` construct `List`s
+println (greeting |> map f).[0]         # Meanwhile, `.[` and `]` are index operators
