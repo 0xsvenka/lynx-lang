@@ -2,7 +2,7 @@ Option : Type -> Type               # PascalCase indicates constructor
 Option =
   | Some : %~a -> a -> Option a     # In a type context, we should write `type ~ term`
                                     #   instead of `term : type`; moreover,
-                                    #   `%~a` is syntax sugar for `%(Type ~ a)`
+                                    #   `%~a` is syntactic sugar for `%(Type ~ a)`
   | None : %~a -> Option a
 
 Expr : Type -> Type                 # An example of GADT
