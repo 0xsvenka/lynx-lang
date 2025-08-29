@@ -21,44 +21,37 @@ impl fmt::Display for Span {
 #[derive(Debug, Clone)]
 pub enum TokenKind {
 
-    /// An identifier starting with a lowercase letter or `_`,
-    /// possibly containing alphanumeric characters, `'`, `!` or `_`.
+    /// Identifier, which falls into either of the two categories:
+    /// alphabetic identifier, starting with an alphabetic character or `_`,
+    /// possibly containing alphanumeric characters, `'`, `!` and `_`;
+    /// symbolic identifier, consisting of symbolic characters
+    /// `~`, `` ` ``, `!`, `@`, `$`, `%`, `^`, `&`, `*`, `_`, `-`, `+`, `=`,
+    /// `|`, `:`, `<`, `>`, `.`, `?`, and `/`
     Id(String),
 
-    /// A constructor identifier starting with an uppercase letter,
-    /// possibly containing alphanumeric characters, `'`, `!` or `_`.
-    ConId(String),
-
     /// Interger literal
-    Int(i64),
+    IntLit(i64),
 
     /// Floating-point number literal
-    Float(f64),
+    FloatLit(f64),
 
     /// Character literal
-    Char(char),
+    CharLit(char),
 
     /// String literal
-    Str(String),
+    StrLit(String),
 
-    /// ## Keywords
+    // Keywords
+
+    // Alphabetic keywords
     /// The keyword `case`
     Case,
-    /// The keyword `fn`
-    Fn,
     /// The keyword `import`
     Import,
     /// The keyword `of`
     Of,
-    /// The keyword `self`
-    SelfLower,
-    /// The keyword `Self`
-    SelfUpper,
-    /// The keyword `type`
-    Type,
-    /// The keyword `var`
-    Var,
-    // Symbolic keywords are also keywords
+
+    // Symbolic keywords
     /// `:`
     Colon,
     /// `::`
@@ -73,26 +66,40 @@ pub enum TokenKind {
     FatArrow,
     /// `=`
     Bind,
-    /// `:=`
-    Assign,
     /// `@`
     At,
     /// `|`
     Pipe,
-
-    /// ## Separators
-    /// Left parenthesis `(`
+    /// `%`
+    Percent,
+    /// `~`
+    Tilde,
+    /// `%~`
+    PercentTilde,
+    /// `(` (left parenthesis)
     Lp,
-    /// Right parenthesis `)`
+    /// `)` (right parenthesis) 
     Rp,
-    /// Left bracket `[`
+    /// `(|`
+    LpPipe,
+    /// `|)`
+    PipeRp,
+    /// `[` (left bracket)
     Lb,
-    /// Right bracket `]`
+    /// `]` (right bracket)
     Rb,
-    /// Left curly brace `{`
+    /// `[|`
+    LbPipe,
+    /// `|]`
+    PipeRb,
+    /// `{` (left curly brace)
     Lc,
-    /// Right curly brace `}`
+    /// `}` (right curly brace)
     Rc,
+    /// `{|`
+    LcPipe,
+    /// `|}`
+    PipeRc,
     /// `,`
     Comma,
     /// `;` or `EOL`

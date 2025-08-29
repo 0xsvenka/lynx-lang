@@ -1,3 +1,5 @@
+#!/usr/bin/lynx
+
 import std.math
 
 println "Hello, World!"
@@ -5,8 +7,9 @@ println "Hello, World!"
 f : Int -> Int -> Int = i => j => i + j
 incr = f 1
 
-var a = 12345678
-a := 2; b = a
+# Mutability is currently unsupported...
+# var a = 12345678
+# a := 2; b = a
 
 c = "bc\n\t\\\"
 ...and next line"

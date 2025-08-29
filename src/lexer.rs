@@ -1,4 +1,4 @@
-use std::{collections::{HashMap, HashSet}, iter::Peekable, str::Chars};
+use std::{collections::HashMap, iter::Peekable, str::Chars};
 
 use crate::{error::Error, token::{Pos, Span, Token, TokenKind::{self, *}}};
 
@@ -6,8 +6,14 @@ pub struct Lexer<'a> {
     chars: Peekable<Chars<'a>>,
     pos: Pos,
 
-    /// Table of all Lynx keywords & corresponding `TokenKind`s
-    keywords_table: HashMap<&'a str, TokenKind>,
+    /// Table of Lynx's alphabetic keywords & corresponding `TokenKind`s
+    alpha_kw_table: HashMap<&'a str, TokenKind>,
+    /// Table of Lynx's symbolic keywords & corresponding `TokenKind`s.
+    /// This is used for distinguishing keywords from identifiers,
+    /// and since `(`, `)`, `[`, `]`, `{`, `}`, `,`, `;` and `\` are
+    /// not allowed in identifiers, the keywords containing them are
+    /// left out in this table and lexed differently.
+    sym_kw_table: HashMap<&'a str, TokenKind>,
 }
 
 impl<'a> Lexer<'a> {
@@ -16,25 +22,24 @@ impl<'a> Lexer<'a> {
             chars: src.chars().peekable(),
             pos: Pos(1, 1),
 
-            keywords_table: HashMap::from([
+            alpha_kw_table: HashMap::from([
                 ("case"     , Case),
-                ("fn"       , Fn),
                 ("import"   , Import),
                 ("of"       , Of),
-                ("self"     , SelfLower),
-                ("Self"     , SelfUpper),
-                ("type"     , Type),
-                ("var"      , Var),
+            ]),
+            sym_kw_table: HashMap::from([
                 (":"        , Colon),
-                (":"        , DoubleColon),
+                ("::"       , DoubleColon),
                 ("."        , Dot),
                 ("_"        , Underscore),
                 ("->"       , Arrow),
                 ("=>"       , FatArrow),
                 ("="        , Bind),
-                (":="       , Assign),
                 ("@"        , At),
                 ("|"        , Pipe),
+                ("%"        , Percent),
+                ("~"        , Tilde),
+                ("%~"       , PercentTilde),
             ]),
         }
     }
@@ -54,10 +59,11 @@ impl<'a> Lexer<'a> {
 
     fn skip_ws(&mut self) {
         while let Some(&c) = self.chars.peek() {
-            if !c.is_whitespace() || c == '\n' {
-                break;
+            match c {
+                '\n' => self.advance_to_next_line(),
+                c if c.is_whitespace() => self.advance_in_same_line(),
+                _ => break,
             }
-            self.advance_in_same_line();
         }
     }
 
@@ -81,7 +87,7 @@ impl<'a> Lexer<'a> {
             match self.chars.peek() {
                 Some('"') => {    // Closing quote
                     self.advance_in_same_line();
-                    return Ok(Token(StrLiteral(s),
+                    return Ok(Token(StrLit(s),
                             Span(start_pos, self.pos.to_owned())));
                 }
 
@@ -171,36 +177,26 @@ impl<'a> Lexer<'a> {
         }
 
         if let Ok(num) = num_str.parse() {
-            Ok(Token(NumLiteral(num), Span(start_pos, self.pos.to_owned())))
+            Ok(Token(IntLit(num), Span(start_pos, self.pos.to_owned())))
         } else {
             Err(Error::InvalidNumFormat(Span(start_pos, self.pos.to_owned())))
         }
     }
 
-    // Symbolic identifiers & keywords are also included
     fn lex_id_or_keyword(&mut self) -> Token {
         let start_pos = Pos(self.pos.0, self.pos.1 + 1);
         let mut name = String::new();
 
         while let Some(&c) = self.chars.peek() {
             if !(c.is_alphanumeric()
-                    || c == '~' || c == '!'
-                    || c == '@' || c == '$'
-                    || c == '%' || c == '^'
-                    || c == '&' || c == '*'
-                    || c == '_' || c == '-'
-                    || c == '+' || c == '='
-                    || c == '|' || c == ':'
-                    || c == '<' || c == ','
-                    || c == '>' || c == '.'
-                    || c == '?' || c == '/') {
+                    || c == '\'' || c == '!' || c == '_') {
                 break;
             }   
             name.push(c);
             self.advance_in_same_line();
         }
 
-        match self.keywords_table.get(name.as_str()) {
+        match self.alpha_kw_table.get(name.as_str()) {
             Some(keyword_token) =>
                     Token(keyword_token.to_owned(), Span(start_pos, self.pos.to_owned())),
             None => Token(Id(name), Span(start_pos, self.pos.to_owned()))

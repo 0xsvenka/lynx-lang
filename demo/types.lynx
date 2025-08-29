@@ -1,6 +1,7 @@
 Option : Type -> Type               # PascalCase indicates constructor
 Option =
-  | Some : %~a -> a -> Option a     # In a type context, we should write `type ~ term`
+  | Some : %~a -> a -> Option a     # `%` marks the following parameter as inferable
+                                    # In a type context, we should write `type ~ term`
                                     #   instead of `term : type`; moreover,
                                     #   `%~a` is syntactic sugar for `%(Type ~ a)`
   | None : %~a -> Option a

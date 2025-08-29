@@ -8,13 +8,12 @@ pub enum Error {
     InvalidNumFormat(Span),
     UnexpectedChar(Pos, char),
     UnknownEscapeSeq(Span, String),
-    UnsupportedOperator(Span, String),
-    UnterminatedStr(Pos),       // Indicates the starting position of the string
+    /// The `Pos` indicates the starting position of the string
+    UnterminatedStr(Pos),
 
     // Parsing errors
     UnexpectedToken(String),
     UnexpectedEOF,
-    InvalidToken(String),
 }
 
 impl fmt::Display for Error {
@@ -26,8 +25,6 @@ impl fmt::Display for Error {
                 write!(f, "Lexing Error: Unexpected character `{c}` at {pos}"),
             Error::UnknownEscapeSeq(span, s) =>
                 write!(f, "Lexing Error: Unknown escape sequence `{s}` at {span}"),
-            Error::UnsupportedOperator(span, s) =>
-                write!(f, "Lexing Error: Unsupported operator `{s}` at {span}"),
             Error::UnterminatedStr(pos) =>
                 write!(f, "Lexing Error: Unterminated string starting at {pos}"),
             _ => write!(f, ""),     // TODO: Add support for other errors
