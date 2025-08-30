@@ -12,7 +12,7 @@ pub struct Lexer<'a> {
     /// This is used for distinguishing keywords from identifiers,
     /// and since `(`, `)`, `[`, `]`, `{`, `}`, `,`, `;` and `\` are
     /// not allowed in identifiers, the keywords containing them are
-    /// left out in this table and lexed differently.
+    /// left out from this table and lexed differently.
     sym_kw_table: HashMap<&'a str, TokenKind>,
 }
 
