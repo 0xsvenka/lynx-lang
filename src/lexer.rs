@@ -57,13 +57,14 @@ impl<'a> Lexer<'a> {
         self.chars.next();
     }
 
+    /// This function does not skip `\n`, since it
+    /// should be lexed as [crate::token::TokenKind::ExprEnd].
     fn skip_ws(&mut self) {
         while let Some(&c) = self.chars.peek() {
-            match c {
-                '\n' => self.advance_to_next_line(),
-                c if c.is_whitespace() => self.advance_in_same_line(),
-                _ => break,
+            if !c.is_whitespace() || c == '\n' {
+                break;
             }
+            self.advance_in_same_line();
         }
     }
 
@@ -124,30 +125,31 @@ impl<'a> Lexer<'a> {
                             self.advance_in_same_line();
                             '"'
                         }
-                        // TODO: Support \u escape sequence
+                        // TODO: Support \u escape sequences
 
                         Some('\n') => {
                             self.advance_to_next_line();
                             return Err(Error::UnknownEscapeSeq(
                                     Span(esc_start_pos.to_owned(), self.pos.to_owned()),
-                                    "\\\n".to_string()))
+                                    "\\\n".to_string()));
                         }
                         Some(&other) => {
                             self.advance_in_same_line();
                             return Err(Error::UnknownEscapeSeq(
                                     Span(esc_start_pos.to_owned(), self.pos.to_owned()),
-                                    format!("\\{other}")))
+                                    format!("\\{other}")));
                         }
 
                         None => {
-                            return Err(Error::UnterminatedStr(start_pos.to_owned()))
+                            return Err(Error::UnterminatedStr(start_pos.to_owned()));
                         }
                     };
 
                     s.push(escaped_ch);
                 }
 
-                // String literals may occupy multiple lines
+                // String literals may occupy multiple lines,
+                // and the line breaks are preserved.
                 Some('\n') => {
                     self.advance_to_next_line();
                     s.push('\n');
@@ -164,26 +166,52 @@ impl<'a> Lexer<'a> {
         }
     }
 
+    // TODO: Support more number formats, like base prefixes and underscores
     fn lex_num_literal(&mut self) -> Result<Token, Error> {
         let start_pos = Pos(self.pos.0, self.pos.1 + 1);
         let mut num_str = String::new();
-
+        let mut is_float = false;
+        
         while let Some(&c) = self.chars.peek() {
-            if !c.is_ascii_digit() {
-                break;
+            match c {
+                c if c.is_ascii_digit() => {
+                    num_str.push(c);
+                    self.advance_in_same_line();
+                }
+                '.' => {
+                    if is_float {
+                        break;
+                    }
+                    is_float = true;
+                    num_str.push(c);
+                    self.advance_in_same_line();
+                }
+                _ => {
+                    break;
+                }
             }
-            num_str.push(c);
-            self.advance_in_same_line();
         }
-
-        if let Ok(num) = num_str.parse() {
-            Ok(Token(IntLit(num), Span(start_pos, self.pos.to_owned())))
+        
+        if is_float {
+            if let Ok(num) = num_str.parse::<f64>() {
+                Ok(Token(FloatLit(num),
+                    Span(start_pos, self.pos.to_owned())))
+            } else {
+                Err(Error::InvalidNumFormat(
+                    Span(start_pos, self.pos.to_owned())))
+            }
         } else {
-            Err(Error::InvalidNumFormat(Span(start_pos, self.pos.to_owned())))
+            if let Ok(num) = num_str.parse::<i64>() {
+                Ok(Token(IntLit(num),
+                    Span(start_pos, self.pos.to_owned())))
+            } else {
+                Err(Error::InvalidNumFormat(
+                    Span(start_pos, self.pos.to_owned())))
+            }
         }
     }
 
-    fn lex_id_or_keyword(&mut self) -> Token {
+    fn lex_alpha(&mut self) -> Token {
         let start_pos = Pos(self.pos.0, self.pos.1 + 1);
         let mut name = String::new();
 
@@ -198,8 +226,38 @@ impl<'a> Lexer<'a> {
 
         match self.alpha_kw_table.get(name.as_str()) {
             Some(keyword_token) =>
-                    Token(keyword_token.to_owned(), Span(start_pos, self.pos.to_owned())),
-            None => Token(Id(name), Span(start_pos, self.pos.to_owned()))
+                    Token(keyword_token.to_owned(),
+                        Span(start_pos, self.pos.to_owned())),
+            None => Token(Id(name),
+                        Span(start_pos, self.pos.to_owned())),
+        }
+    }
+
+    fn lex_sym(&mut self) -> Token {
+        let start_pos = Pos(self.pos.0, self.pos.1 + 1);
+        let mut name = String::new();
+
+        while let Some(&c) = self.chars.peek() {
+            if !(c == '~' || c == '`' || c == '!' ||
+                 c == '@' || c == '$' || c == '%' ||
+                 c == '^' || c == '&' || c == '*' ||
+                 c == '-' || c == '+' || c == '=' ||
+                 c == '|' || c == ':' || c == '<' ||
+                 c == '>' || c == '.' || c == '?' ||
+                 c == '/' || c == '\''|| c =='_')
+            {
+                break;
+            }   
+            name.push(c);
+            self.advance_in_same_line();
+        }
+
+        match self.sym_kw_table.get(name.as_str()) {
+            Some(keyword_token) =>
+                    Token(keyword_token.to_owned(),
+                        Span(start_pos, self.pos.to_owned())),
+            None => Token(Id(name),
+                        Span(start_pos, self.pos.to_owned())),
         }
     }
 
@@ -232,6 +290,22 @@ impl<'a> Lexer<'a> {
                 self.advance_in_same_line();
                 Ok(Token(Rc, Span(start_pos, self.pos.to_owned())))
             }
+            ',' => {
+                self.advance_in_same_line();
+                Ok(Token(Comma, Span(start_pos, self.pos.to_owned())))
+            }
+            ';' => {
+                self.advance_in_same_line();
+                Ok(Token(ExprEnd, Span(start_pos, self.pos.to_owned())))
+            }
+            '\n' => {
+                self.advance_to_next_line();
+                Ok(Token(ExprEnd, Span(start_pos, self.pos.to_owned())))
+            }
+            '\\' => {
+                self.advance_in_same_line();
+                Ok(Token(ExprContinue, Span(start_pos, self.pos.to_owned())))
+            }
 
             other => {
                 self.advance_in_same_line();
@@ -252,6 +326,7 @@ impl<'a> Iterator for Lexer<'a> {
                 self.skip_comment();
                 self.next()
             }
+            // TODO: Char literals
             Some('"') => {
                 Some(self.lex_str_literal())
             }
@@ -259,7 +334,18 @@ impl<'a> Iterator for Lexer<'a> {
                 Some(self.lex_num_literal())
             }
             Some(&c) if c.is_alphabetic() || c == '_' => {
-                Some(Ok(self.lex_id_or_keyword()))
+                Some(Ok(self.lex_alpha()))
+            }
+            Some(&c)
+                 if c == '~' || c == '`' || c == '!' ||
+                    c == '@' || c == '$' || c == '%' ||
+                    c == '^' || c == '&' || c == '*' ||
+                    c == '-' || c == '+' || c == '=' ||
+                    c == '|' || c == ':' || c == '<' ||
+                    c == '>' || c == '.' || c == '?' ||
+                    c == '/'
+                => {
+                Some(Ok(self.lex_sym()))
             }
             Some(&c) => {
                 Some(self.lex_others(c))
