@@ -25,13 +25,16 @@ impl<'a> Lexer<'a> {
             alpha_kw_table: HashMap::from([
                 ("case"     , Case),
                 ("import"   , Import),
+                ("infix"    , Infix),
+                ("infixl"   , Infixl),
+                ("infixr"   , Infixr),
                 ("of"       , Of),
+                ("_"        , Underscore),
             ]),
             sym_kw_table: HashMap::from([
                 (":"        , Colon),
                 ("::"       , DoubleColon),
                 ("."        , Dot),
-                ("_"        , Underscore),
                 ("->"       , Arrow),
                 ("=>"       , FatArrow),
                 ("="        , Bind),
@@ -261,14 +264,46 @@ impl<'a> Lexer<'a> {
         }
     }
 
+    fn lex_pipe(&mut self) -> Token {
+        let start_pos = Pos(self.pos.0, self.pos.1 + 1);
+
+        // This is for performing the second lookahead
+        let mut temp_iter = self.chars.clone();
+        temp_iter.next();
+        match temp_iter.peek() {
+            Some(')') => {
+                self.advance_in_same_line();
+                self.advance_in_same_line();
+                Token(PipeRp, Span(start_pos, self.pos.to_owned()))
+            }
+            Some(']') => {
+                self.advance_in_same_line();
+                self.advance_in_same_line();
+                Token(PipeRb, Span(start_pos, self.pos.to_owned()))
+            }
+            Some('}') => {
+                self.advance_in_same_line();
+                self.advance_in_same_line();
+                Token(PipeRc, Span(start_pos, self.pos.to_owned()))
+            }
+            _ => {
+                self.lex_sym()
+            }
+        }
+    }
+
     fn lex_others(&mut self, c: char) -> Result<Token, Error> {
         let start_pos = Pos(self.pos.0, self.pos.1 + 1);
 
         match c {
-            // Lex separators & operators
             '(' => {
                 self.advance_in_same_line();
-                Ok(Token(Lp, Span(start_pos, self.pos.to_owned())))
+                if let Some('|') = self.chars.next() {
+                    self.advance_in_same_line();
+                    Ok(Token(LpPipe, Span(start_pos, self.pos.to_owned())))
+                } else {
+                    Ok(Token(Lp, Span(start_pos, self.pos.to_owned())))
+                }
             }
             ')' => {
                 self.advance_in_same_line();
@@ -276,7 +311,12 @@ impl<'a> Lexer<'a> {
             }
             '[' => {
                 self.advance_in_same_line();
-                Ok(Token(Lb, Span(start_pos, self.pos.to_owned())))
+                if let Some('|') = self.chars.next() {
+                    self.advance_in_same_line();
+                    Ok(Token(LbPipe, Span(start_pos, self.pos.to_owned())))
+                } else {
+                    Ok(Token(Lb, Span(start_pos, self.pos.to_owned())))
+                }
             }
             ']' => {
                 self.advance_in_same_line();
@@ -284,7 +324,12 @@ impl<'a> Lexer<'a> {
             }
             '{' => {
                 self.advance_in_same_line();
-                Ok(Token(Lc, Span(start_pos, self.pos.to_owned())))
+                if let Some('|') = self.chars.next() {
+                    self.advance_in_same_line();
+                    Ok(Token(LcPipe, Span(start_pos, self.pos.to_owned())))
+                } else {
+                    Ok(Token(Lc, Span(start_pos, self.pos.to_owned())))
+                }
             }
             '}' => {
                 self.advance_in_same_line();
@@ -321,36 +366,39 @@ impl<'a> Iterator for Lexer<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         self.skip_ws();
 
-        match self.chars.peek() {
-            Some('#') => {
+        match self.chars.peek()? {
+            '#' => {
                 self.skip_comment();
                 self.next()
             }
             // TODO: Char literals
-            Some('"') => {
+            '"' => {
                 Some(self.lex_str_literal())
             }
-            Some(&c) if c.is_ascii_digit() => {
+            &c if c.is_ascii_digit() => {
                 Some(self.lex_num_literal())
             }
-            Some(&c) if c.is_alphabetic() || c == '_' => {
+            &c if c.is_alphabetic() || c == '_' => {
                 Some(Ok(self.lex_alpha()))
             }
-            Some(&c)
+            &c
                  if c == '~' || c == '`' || c == '!' ||
                     c == '@' || c == '$' || c == '%' ||
                     c == '^' || c == '&' || c == '*' ||
                     c == '-' || c == '+' || c == '=' ||
-                    c == '|' || c == ':' || c == '<' ||
-                    c == '>' || c == '.' || c == '?' ||
-                    c == '/'
+                    c == ':' || c == '<' || c == '>' ||
+                    c == '.' || c == '?' || c == '/'
                 => {
                 Some(Ok(self.lex_sym()))
             }
-            Some(&c) => {
+            // '|' is left out from the branch above and handled
+            // specially, since it can lead "|)", "|]", and "|}"
+            '|' => {  
+                Some(Ok(self.lex_pipe()))
+            }
+            &c => {
                 Some(self.lex_others(c))
             }
-            None => None,
         }
     }
 }
