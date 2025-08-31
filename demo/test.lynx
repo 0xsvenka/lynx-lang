@@ -2,26 +2,17 @@
 
 import std.math
 
-println "Hello, World!"
-
 f : Int -> Int -> Int = i => j => i + j
-incr = f 1
 
-# Mutability is currently unsupported...
-# var a = 12345678
-a := 2; b = a
+a = 2; b = a
 
 c = "bc\n\t\\\"
 ...and next line"
+
 # A comment
 # Another comment
-println c
 
 (1 .. 100) |> List::from \
-|> map (i => i + 1) \
-|> filter math.is_prime \
-|> reduce (+) \
-|> println
+|> reduce (+)
 
-assert_eq (len [1, 2, 3]) 3
-+'' _%^^'_! apq' cqioef_CIO _12 ~~? [| |]
+c0 = '\0'
