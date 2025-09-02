@@ -47,6 +47,7 @@ pub enum TokenKind {
         String,
     ),
 
+    // TODO: Support binary operators
     /// Binary operator, special identifier declared with `infix(l|r)?`. It
     /// is essentially a function with two parameters, whose application
     /// appears as `a bin_op b` instead of normal `bin_op a b`. Surrounding
@@ -97,7 +98,7 @@ pub enum TokenKind {
     /// The keyword `of`.
     Of,
     /// The keyword `_`, which is considered alphabetic and
-    /// not symbolic because symbolic identifiers/keywords cannot
+    /// not symbolic, because symbolic identifiers/keywords cannot
     /// start with `_`, while alphabetic ones can. 
     Underscore,
 

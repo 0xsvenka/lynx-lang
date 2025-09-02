@@ -17,7 +17,7 @@ pub struct Lexer<'a> {
     /// This is used for distinguishing keywords from identifiers,
     /// and since `(`, `)`, `[`, `]`, `{`, `}`, `,`, `;` and `\` are
     /// not allowed in identifiers, the keywords containing them are
-    /// left out from this table and lexed differently.
+    /// left out from this table and lexed separately.
     sym_kw_table: HashMap<&'a str, TokenKind>,
 }
 
@@ -54,12 +54,18 @@ impl<'a> Lexer<'a> {
         }
     }
 
+    /// Updates the inner state of the lexer,
+    /// when we are advancing in the same line.
     #[inline]
     fn advance_in_same_line(&mut self) {
         self.pos.1 += 1;
         self.chars.next();
     }
 
+    /// Updates the inner state of the lexer,
+    /// when we are advancing to the *line break*.
+    /// After calling this function, `self.pos`
+    /// becomes `Pos(/*next_line_number*/, 0)`.
     #[inline]
     fn advance_to_next_line(&mut self) {
         self.pos.0 += 1;
@@ -92,6 +98,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
+    /// Lexes character literals.
     fn lex_char_lit(&mut self) -> Result<Token, Error> {
         self.advance_in_same_line();    // Skip opening quote
         let start_pos = self.pos.to_owned();
@@ -187,6 +194,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
+    /// Lexes string literals.
     fn lex_str_lit(&mut self) -> Result<Token, Error> {
         self.advance_in_same_line();    // Skip opening quote
         let start_pos = self.pos.to_owned();
@@ -271,6 +279,7 @@ impl<'a> Lexer<'a> {
     }
 
     // TODO: Support more number formats, like base prefixes and underscores
+    /// Lexes number literals.
     fn lex_num_lit(&mut self) -> Result<Token, Error> {
         let start_pos = Pos(self.pos.0, self.pos.1 + 1);
         let mut num_str = String::new();
@@ -315,6 +324,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
+    /// Lexes alphabetic identifiers and keywords.
     fn lex_alpha(&mut self) -> Token {
         let start_pos = Pos(self.pos.0, self.pos.1 + 1);
         let mut name = String::new();
@@ -337,6 +347,10 @@ impl<'a> Lexer<'a> {
         }
     }
 
+    /// Lexes symbolic identifiers and keywords.
+    /// Since `(`, `)`, `[`, `]`, `{`, `}`, `,`, `;` and `\` are
+    /// not allowed in identifiers, the keywords containing them are
+    /// not handled in this function. Instead, they are lexed separately.
     fn lex_sym(&mut self) -> Token {
         let start_pos = Pos(self.pos.0, self.pos.1 + 1);
         let mut name = String::new();
