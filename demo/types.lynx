@@ -11,16 +11,16 @@ Expr =
   | IntExpr : Int -> Expr Int
   | BoolExpr : Bool -> Expr Bool
   | AddExpr : Expr Int -> Expr Int -> Expr Int
-  | EqExpr : Expr a' -> Expr a' -> Expr Bool
+  | EqExpr : %~a -> Expr a -> Expr a -> Expr Bool
 
-len : %(Nat ~ n) -> %~a -> List n a -> Nat      # Dependent type
-len [] = 0
-len (_ +: tail) = 1 + len tail
+len : %~a -> [|a|] -> Nat 
+len Nil = 0
+len (Cons _ tail) = 1 + len tail
 
-List : Nat -> Type -> Type
-List =
-  | Nil : %~a -> List 0 a
-  | Cons : %(Pos ~ n) -> %~a -> a -> List n a -> List (n+1) a
+Vec : Nat -> Type -> Type               # Dependent type
+Vec =
+  | VNil : %~a -> Vec 0 a
+  | VCons : %(Nat ~ n) -> %~a -> a -> Vec n a -> Vec (Suc n) a
 
 Person = {| name : Str, age : Nat |}    # `{|` and `|}` construct record types
 

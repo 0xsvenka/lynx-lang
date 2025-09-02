@@ -2,7 +2,8 @@
 
 import std.math
 
-f : Int -> Int -> Int = i => j => i + j
+f : Int -> Int -> Int =
+    i => j => i + j
 
 a = 2; b = a
 
