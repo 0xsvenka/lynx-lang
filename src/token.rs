@@ -137,6 +137,8 @@ pub enum TokenKind {
     Lb,
     /// The keyword `]` (right bracket).
     Rb,
+    /// The keyword `.[`.
+    DotLp,
     /// The keyword `[|`.
     LbPipe,
     /// The keyword `|]`.

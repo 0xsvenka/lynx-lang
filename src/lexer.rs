@@ -396,6 +396,27 @@ impl<'a> Lexer<'a> {
         }
     }
 
+    /// Handles situations where the lookahead is `.`.
+    fn lex_dot(&mut self) -> Token {
+        let start_pos = Pos(self.pos.0, self.pos.1 + 1);
+
+        // This is for performing the second lookahead
+        let mut temp_iter = self.chars.clone();
+        temp_iter.next();
+        match temp_iter.peek() {
+            Some('[') => {
+                self.advance_in_same_line();
+                self.advance_in_same_line();
+                Token(DotLp, Span(start_pos, self.pos.to_owned()))
+            }
+            // Otherwise, this is just the beginning of something
+            // like a symbolic identifier
+            _ => {
+                self.lex_sym()
+            }
+        }
+    }
+
     /// Handles situations where the lookahead is `(`.
     fn lex_lp(&mut self) -> Token {
         let start_pos = Pos(self.pos.0, self.pos.1 + 1);
@@ -511,7 +532,7 @@ impl<'a> Iterator for Lexer<'a> {
                     c == '^' || c == '&' || c == '*' ||
                     c == '-' || c == '+' || c == '=' ||
                     c == ':' || c == '<' || c == '>' ||
-                    c == '.' || c == '?' || c == '/'
+                    c == '?' || c == '/'
                 => {
                 Some(Ok(self.lex_sym()))
             }
@@ -519,6 +540,11 @@ impl<'a> Iterator for Lexer<'a> {
             // specially, since it can lead "|)", "|]", and "|}"
             '|' => {  
                 Some(Ok(self.lex_pipe()))
+            }
+            // '.' is left out from the branch above and handled
+            // specially as well, since it can lead ".["
+            '.' => {  
+                Some(Ok(self.lex_dot()))
             }
             '(' => {  
                 Some(Ok(self.lex_lp()))
