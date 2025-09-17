@@ -1,17 +1,25 @@
 import std.math
 
-f : Int -> Int -> Int =
-    i => j => i + j
+f : Int -> Int -> Int
+f = i => j => i + j
 
 a = 2; b = a
 
-c = "bc\n\t\\\"
-...and next line"
+s = "bc\n\t\\\""
+multi_line =
+    \This is a multi-line
+    \string literal.
+    \There are no escape sequences here:
+    \" ' \ \\ \n
+    \You will see a trailing '\n' due to the next line
+    \
 
 -- A comment
 -- Another comment
 
-(1 .. 100) |> List::from \
-|> reduce (+)
+(1 .. 100)
+    |> List::from
+    |> reduce (+)
+    |> println
 
 c0 = '\0'

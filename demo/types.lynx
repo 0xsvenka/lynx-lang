@@ -42,4 +42,4 @@ single_int = (1,)                       -- Tuple with one single field, which mu
 
 greeting : Str
 greeting = ['H', 'e', 'l', 'l', 'o']    -- `[` and `]` construct `List`s
-println (greeting |> map f).[0]         -- Meanwhile, `.[` and `]` are the index operator
+println (map f greeting).[0]         -- Meanwhile, `.[` and `]` are the index operator
