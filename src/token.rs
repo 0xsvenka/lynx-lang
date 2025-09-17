@@ -1,7 +1,7 @@
 use std::fmt;
 
 /// Position in the Lynx source file.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct Pos(
     /// Line number.
     pub usize,
@@ -40,7 +40,7 @@ pub enum TokenKind {
     /// possibly containing alphanumeric characters, `'`, `!` and `_`;
     /// symbolic identifier, starting with a symbolic character
     /// `~`, `` ` ``, `!`, `@`, `$`, `%`, `^`, `&`, `*`, `-`, `+`, `=`,
-    /// `|`, `:`, `<`, `>`, `.`, `?`, or `/`, 
+    /// `|`, `:`, `<`, `>`, `.`, `?`, or `/`,
     /// possibly containing the aforementioned charaters plus `'` and `_`.
     Id(
         /// The name of the identifier.
@@ -99,7 +99,7 @@ pub enum TokenKind {
     Of,
     /// The keyword `_`, which is considered alphabetic and
     /// not symbolic, because symbolic identifiers/keywords cannot
-    /// start with `_`, while alphabetic ones can. 
+    /// start with `_`, while alphabetic ones can.
     Underscore,
 
     // Symbolic keywords
@@ -128,7 +128,7 @@ pub enum TokenKind {
     PercentTilde,
     /// The keyword `(` (left parenthesis).
     Lp,
-    /// The keyword `)` (right parenthesis). 
+    /// The keyword `)` (right parenthesis).
     Rp,
     /// The keyword `(|`.
     LpPipe,

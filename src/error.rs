@@ -34,7 +34,7 @@ impl fmt::Display for Error {
                 write!(f, "Lexing Error: Empty character literal at {span}"),
             Error::InvalidNumLitFormat(span) =>
                 write!(f, "Lexing Error: Invalid number literal format at {span}"),
-            Error::MultipleCharsInCharLit(span) => 
+            Error::MultipleCharsInCharLit(span) =>
                 write!(f, "Lexing Error: Multiple characters in character literal at {span}"),
             Error::UnexpectedChar(pos) =>
                 write!(f, "Lexing Error: Unexpected character at {pos}"),

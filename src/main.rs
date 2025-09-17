@@ -1,4 +1,4 @@
-use crate::{lexer::Lexer, parser::Parser};
+use crate::{lexer::Lexer, /*parser::Parser*/};
 
 mod token;
 mod expr;
@@ -12,7 +12,7 @@ fn main() {
     let src = std::fs::read_to_string(path).expect("Failed to read file");
 
     let lexer = Lexer::new(&src);
-    let mut _parser = Parser {};
+    //let mut parser = Parser {};
     for result in lexer {
         println!("{:?}", result);
     }

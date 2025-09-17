@@ -1,5 +1,6 @@
 [package]
 name = "lynx-lang"
 version = "0.1.0"
-authors = ["0xsvenka"]
 edition = "2024"
+description = "The Lynx programming language"
+licence = "MIT"

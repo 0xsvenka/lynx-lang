@@ -1,5 +1,3 @@
-#!/usr/bin/lynx
-
 import std.math
 
 f : Int -> Int -> Int =
@@ -10,8 +8,8 @@ a = 2; b = a
 c = "bc\n\t\\\"
 ...and next line"
 
-# A comment
-# Another comment
+-- A comment
+-- Another comment
 
 (1 .. 100) |> List::from \
 |> reduce (+)
