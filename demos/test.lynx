@@ -1,0 +1,28 @@
+import std::math
+
+f : Int -> Int -> Int
+f = i ~> j ~> i + j
+
+a = 2; b = a
+c0 = '\0'
+
+s = "bc\n\t\\\""
+multi_line_str =
+    \This is a multi-line
+    \string literal.
+    \    Indentation at the front of this line.
+        \Where the line starts does not matter.
+    \There is no escape sequence processed here:
+    \" ' \ \\ \n
+    \You will see a trailing '\n' due to the next line
+    \
+
+-- A comment
+-- Another comment
+
+(1 .. 100)
+    |> Range::to_list
+    |> map (x ~> x + 1)
+    |> filter math.is_prime
+    |> reduce (+)
+    |> println

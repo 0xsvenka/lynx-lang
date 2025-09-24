@@ -35,20 +35,13 @@ impl fmt::Display for Span {
 #[derive(Debug, Clone)]
 pub enum TokenKind {
 
-    /// Identifier, which falls into either of the two categories:
-    /// alphabetic identifier, starting with an alphabetic character or `_`,
-    /// possibly containing alphanumeric characters, `'`, `!` and `_`;
-    /// symbolic identifier, starting with a symbolic character
-    /// `~`, `` ` ``, `!`, `@`, `$`, `%`, `^`, `&`, `*`, `-`, `+`, `=`,
-    /// `|`, `:`, `<`, `>`, `.`, `?`, or `/`,
-    /// possibly containing the aforementioned charaters plus `'` and `_`.
     Id(
         /// The name of the identifier.
         String,
     ),
 
     // TODO: Support binary operators
-    /// Binary operator, special identifier declared with `infix(l|r)?`. It
+    /// Binary operator, special identifier declared with `infix[lr]?`. It
     /// is essentially a function with two parameters, whose application
     /// appears as `a bin_op b` instead of normal `bin_op a b`. Surrounding
     /// it with parenthese denotes the corresponding "normal" function.

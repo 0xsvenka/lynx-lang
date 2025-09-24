@@ -1,0 +1,72 @@
+List : Type -> Type
+List =
+  | List::nil : %~A -> List A
+  | List::cons : %~A -> A -> List A -> List A
+
+infixr 5 +:
+(+:) : %~A -> A -> [|A|] -> [|A|]
+(+:) = List::cons
+
+infixr 5 ++
+(++) : %~A -> [|A|] -> [|A|] -> [|A|]
+[] ++ $ys = ys
+($x +: $xs) ++ $ys = x +: (xs ++ ys)
+
+namespace List
+    head! : %~A -> [|A|] -> A
+    head! [] = error! "empty list"
+    head! ($x +: _) = x
+
+    tail! : %~A -> [|A|] -> [|A|]
+    tail! [] = error! "empty list"
+    tail! (_ +: $xs) = xs
+
+    init! : %~A -> [|A|] -> [|A|]
+    init! [] = error! "empty list"
+    init! ($x +: []) = []
+    init! ($x +: $xs) = x +: init! xs
+
+    last! : %~A -> [|A|] -> A
+    last! [] = error! "empty list"
+    last! ($x +: []) = x
+    last! (_ +: $xs) = last! xs
+
+    -- Safer versions of `head`, `tail`, `init` and `last`:
+    shead : %~A -> [|A|] -> Option A
+    shead [] = none
+    shead ($x +: _) = some x
+
+    stail : %~A -> [|A|] -> Option [|A|]
+    stail [] = none
+    stail (_ +: $xs) = some xs
+
+    sinit : %~A -> [|A|] -> Option [|A|]
+    sinit [] = none
+    sinit ($x +: $xs) =
+        case sinit xs of
+            some ys => some (x +: ys)
+            none => some []
+
+    slast : %~A -> [|A|] -> Option A
+    slast [] = none
+    slast ($x +: []) = some x
+    slast (_ +: $xs) = slast xs
+
+    len : %~A -> [|A|] -> Nat
+    len [] = 0
+    len (_ +: $xs) = 1 + len xs
+
+    elem : %~A -> A -> [|A|] -> Bool given(Eq A)  -- TODO: the syntax
+    elem _ [] = false
+    elem e ($x +: $xs) =
+        if e == x then true
+        else elem e xs
+
+    zip : %~A -> %~B -> [|A|] -> [|B|] -> List (|A, B|)
+    zip [] _ = []
+    zip _ [] = []
+    zip ($x +: $xs) ($y +: $ys) = (x, y) +: zip xs ys
+
+    map : %~A -> %~B -> (A -> B) -> [|A|] -> [|B|]
+    map _ [] = []
+    map f ($x +: $xs) = f x +: map f xs
