@@ -3,70 +3,108 @@ List =
   | List::nil : %~A -> List A
   | List::cons : %~A -> A -> List A -> List A
 
-infixr 5 +:
+constructor (+:)
 (+:) : %~A -> A -> [|A|] -> [|A|]
 (+:) = List::cons
 
-infixr 5 ++
 (++) : %~A -> [|A|] -> [|A|] -> [|A|]
-[] ++ $ys = ys
-($x +: $xs) ++ $ys = x +: (xs ++ ys)
+[] ++ ys = ys
+(x+:xs) ++ ys = x +: (xs ++ ys)
 
 namespace List
     head! : %~A -> [|A|] -> A
     head! [] = error! "empty list"
-    head! ($x +: _) = x
+    head! (x+:_) = x
 
     tail! : %~A -> [|A|] -> [|A|]
     tail! [] = error! "empty list"
-    tail! (_ +: $xs) = xs
+    tail! (_+:xs) = xs
 
     init! : %~A -> [|A|] -> [|A|]
     init! [] = error! "empty list"
-    init! ($x +: []) = []
-    init! ($x +: $xs) = x +: init! xs
+    init! (x+:[]) = []
+    init! (x+:xs) = x +: init! xs
 
     last! : %~A -> [|A|] -> A
     last! [] = error! "empty list"
-    last! ($x +: []) = x
-    last! (_ +: $xs) = last! xs
+    last! [x] = x
+    last! (_+:xs) = last! xs
 
     -- Safer versions of `head`, `tail`, `init` and `last`:
     shead : %~A -> [|A|] -> Option A
     shead [] = none
-    shead ($x +: _) = some x
+    shead (x+:_) = some x
 
     stail : %~A -> [|A|] -> Option [|A|]
     stail [] = none
-    stail (_ +: $xs) = some xs
+    stail (_+:xs) = some xs
 
     sinit : %~A -> [|A|] -> Option [|A|]
     sinit [] = none
-    sinit ($x +: $xs) =
+    sinit (x+:xs) =
         case sinit xs of
-            some ys => some (x +: ys)
+            some ys => some (x+:ys)
             none => some []
 
     slast : %~A -> [|A|] -> Option A
     slast [] = none
-    slast ($x +: []) = some x
-    slast (_ +: $xs) = slast xs
+    slast [x] = some x
+    slast (_+:xs) = slast xs
 
     len : %~A -> [|A|] -> Nat
     len [] = 0
-    len (_ +: $xs) = 1 + len xs
+    len (_+:xs) = 1 + len xs
 
-    elem : %~A -> A -> [|A|] -> Bool given(Eq A)  -- TODO: the syntax
-    elem _ [] = false
-    elem e ($x +: $xs) =
+    has_elem : %~A -> %(Eq A) -> A -> [|A|] -> Bool
+    has_elem _ [] = false
+    has_elem e (x+:xs) =
         if e == x then true
-        else elem e xs
+        else has_elem e xs
 
     zip : %~A -> %~B -> [|A|] -> [|B|] -> List (|A, B|)
     zip [] _ = []
     zip _ [] = []
-    zip ($x +: $xs) ($y +: $ys) = (x, y) +: zip xs ys
+    zip (x+:xs) (y+:ys) = (x, y) +: zip xs ys
+
+    zip_with : %~A -> %~B -> %~C
+        -> (A -> B -> C) -> [|A|] -> [|B|] -> [|C|]
+    zip_with [] _ = []
+    zip_with _ [] = []
+    zip_with f (x+:xs) (y+:ys) = f x y +: zip_with f xs ys
+
+    foldl : %~A -> %~B -> (B -> A -> B) -> B -> [|A|] -> B
+    foldl _ z [] = z
+    foldl f z (x+:xs) = foldl f (f z x) xs
+
+    foldr : %~A -> %~B -> (A -> B -> B) -> B -> [|A|] -> B
+    foldr _ z [] = z
+    foldr f z (x+:xs) = f x (foldr f z xs)
+
+    scanl : %~A -> %~B -> (B -> A -> B) -> B -> [|A|] -> [|B|]
+    scanl _ z [] = [z]
+    scanl f z (x+:xs) = z +: scanl f (f z x) xs
+
+    scanr : %~A -> %~B -> (A -> B -> B) -> B -> [|A|] -> [|B|]
+    scanr _ z [] = [z]
+    scanr f z (x+:xs) = f x (head! ys) +: ys 
+        where ys = scanr f z xs
 
     map : %~A -> %~B -> (A -> B) -> [|A|] -> [|B|]
     map _ [] = []
-    map f ($x +: $xs) = f x +: map f xs
+    map f (x+:xs) = f x +: map f xs
+
+    flat_map : %~A -> %~B -> (A -> [|B|]) -> [|A|] -> [|B|]
+    flat_map f = foldr ((++) * f) []
+
+    filter : %~A -> (A -> Bool) -> [|A|] -> [|A|]
+    filter _ [] = []
+    filter p (x+:xs) =
+        if p x then x +: filter p xs
+        else filter p xs
+
+-- TODO: namespace issue & inferable argument resolution
+functor_list : Functor List
+functor_list =
+  {
+    fmap = List::map
+  }

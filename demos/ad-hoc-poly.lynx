@@ -1,0 +1,73 @@
+Multiply : Type -> Type -> Type
+Multiply A B
+  {|
+    Result : Type
+    mul : A -> B -> Result
+  |}
+
+multiply_ints : Multiply Int Int
+multiply_ints =
+  {
+    Result = Int
+    mul = __builtin_mul_int
+  }
+
+composition : %~A -> %~B -> %~C ->
+    Multiply (B -> C) (A -> B)
+composition =
+  {
+    Result = A -> C
+    mul f g = \x -> f (g x)
+  }
+
+(*) : %~A -> %~B -> %((Multiply A B)~m) ->
+    A -> B -> m.Result
+(*) = m.mul
+
+
+Functor : (Type -> Type) -> Type
+Functor F =
+  {|
+    fmap : %~A -> %~B
+        -> (A -> B) -> F A -> F B 
+  |}
+
+functor_list : Functor List
+functor_list =
+  {
+    fmap = List::map
+  }
+
+
+Eq : Type -> Type
+Eq A =
+  {|
+    (==) : A -> A -> Bool
+    (!=) : A -> A -> Bool
+  |}
+
+default_ne : %~A ->
+    (A -> A -> Bool) -> (A -> A -> Bool)
+default_ne eq =
+  {
+    (!=) x y = not (eq x y)
+  }
+
+eq_int : Eq Int
+eq_int =
+  {
+    (==) = __builtin_eq_int
+    (default_ne (==))...
+  }
+
+Complex : Type -> Type
+Complex =
+  | complex : A -> A -> Complex A
+
+eq_complex : %~A -> %(Eq A) -> Eq (Complex A)
+eq_complex %_ %e =
+  {
+    (==) (complex a1 b1) (complex a2 b2) =
+        e.(==) a1 a2 && e.(==) b1 b2
+    (default_ne (==))...
+  }
