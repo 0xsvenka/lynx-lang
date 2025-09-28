@@ -1,45 +1,34 @@
-Option : Type -> Type               -- PascalCase indicates a type; snake_case a term
+Option : Type -> Type
 Option =
-  | some : %~A -> A -> Option A     -- `%` marks the following parameter as inferable.
-                                    -- In a type context, we should write `type ~ term`
-                                    -- instead of `term : type`; moreover, `%~` followed
-                                    -- by `A` is syntactic sugar for `%(Type ~ A)`.
+  | some : %~A -> A -> Option A  -- `%` marks the following parameter as inferable.
+                                 -- In a type context, we should write `type ~ term`
+                                 -- instead of `term : type`; moreover, `%~` followed
+                                 -- by `A` is syntactic sugar for `%(Type ~ A)`.
   | none : %~A -> Option A
 
-Expr : Type -> Type                 -- An example of GADT
+Expr : Type -> Type  -- GADT
 Expr =
   | int_expr : Int -> Expr Int
   | bool_expr : Bool -> Expr Bool
   | add_expr : Expr Int -> Expr Int -> Expr Int
   | eq_expr : %~A -> Expr A -> Expr A -> Expr Bool
 
-len : %~A -> [|A|] -> Nat
-len nil = 0
-len (cons _ tail) = 1 + len tail
-
-Vec : Nat -> Type -> Type               -- Dependent type
+Vec : Nat -> Type -> Type  -- Dependent type
 Vec =
   | vnil : %~A -> Vec 0 A
   | vcons : %(Nat ~ n) -> %~A -> A -> Vec n A -> Vec (Suc n) A
 
-Person = {| name : Str, age : Nat |}    -- `{|` and `|}` construct record types
-
-Point = (|Int, Int|)                    -- `(|` and `|)` construct tuple types
-
-Str = [|Char|]                          -- `[|` and `|]` construct `List` types
-
+Person = {| name : Str, age : Nat |}
 p : Person
-p = { name = "Emma", age = 35 }         -- `{` and `}` with `=` construct records
+p = { name = "Emma", age = 35 }
 
-word_len : Map Str Nat
-word_len = { "name": 4, "age": 3 }      -- `{` and `}` with `:` construct `Map`s
-
+Point = (|Int, Int|) 
 origin : Point
-origin = (0, 0)                         -- `(` and `)` construct tuples
+origin = (0, 0)
 single_int : (|Int|)
-single_int = (1,)                       -- Tuple with one single field, which must
-                                        -- be followed by a trailing comma
+single_int = (1,)  -- Tuple with one single field, which must
+                   -- be followed by a trailing comma
 
+Str = [|Char|]
 greeting : Str
-greeting = ['H', 'e', 'l', 'l', 'o']    -- `[` and `]` construct `List`s
-println (map f greeting).[0]            -- Meanwhile, `.[` and `]` are the index operator
+greeting = ['H', 'e', 'l', 'l', 'o']

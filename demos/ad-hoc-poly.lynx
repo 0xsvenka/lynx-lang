@@ -1,5 +1,5 @@
 Multiply : Type -> Type -> Type
-Multiply A B
+Multiply A B =
   {|
     Result : Type
     mul : A -> B -> Result
