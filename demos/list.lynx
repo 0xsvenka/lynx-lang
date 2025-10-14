@@ -102,9 +102,8 @@ namespace List
         if p x then x +: filter p xs
         else filter p xs
 
--- TODO: namespace issue
-functor_list : Functor List
-functor_list =
-  {
-    fmap = List::map
-  }
+    impl_functor : Functor List
+    impl_functor =
+      {
+        fmap = map
+      }
