@@ -1,28 +1,35 @@
 import std::math
 
-f : Int -> Int -> Int
-f = \i -> \j -> i + j
+f = |i, j => i + j
 
-a = 2; b = a
-c0 = '\0'
+a = 2; b = a;
+c0_' = '\0'
 
-s = "bc\n\t\\\""
+s = "bc\n\t\\\"";
 multi_line_str =
-    \\This is a multi-line
-    \\string literal.
-    \\    Add some indentation.
-        \\Where the line starts does not matter.
-    \\There is no escape sequence processed here:
-    \\" ' \ \\ \n
-    \\You will see a trailing '\n' due to the next line
-    \\
+  \\This is a multi-line
+  \\string literal.
+  \\    Add some indentation.
+    \\Where the line starts does not matter.
+  \\No escape sequence is processed here:
+  \\" ' \ \\ \n
+  \\You will get a trailing '\n' due to the next line
+  \\
 
 -- A comment
 -- Another comment
 
-(1 .. 100)
-    |> Range::to_list
-    |> map (\x -> x + 1)
-    |> filter math::is_prime
-    |> reduce (+)
-    |> println
+rtol (1..100)
+  |> map (|x => x + 1)
+  |> filter math::is_prime
+  |> reduce (+)
+  |> println
+
+bool_to_str =
+  | true => "true"
+  | false => "false"
+
+ii = 3;
+ss = ii |>
+  | 1 | 2 => "small"
+  | _ => "big"

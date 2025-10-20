@@ -1,34 +1,23 @@
-Option : Type -> Type
-Option =
-  | some : %~A -> A -> Option A  -- `%` marks the following parameter as inferable.
-                                 -- In a type context, we should write `type ~ term`
-                                 -- instead of `term : type`; moreover, `%~` followed
-                                 -- by `A` is syntactic sugar for `%(Type ~ A)`.
+data Option : Type -> Type
+  | some : %~A -> A -> Option A
   | none : %~A -> Option A
 
-Expr : Type -> Type  -- GADT
-Expr =
+data Expr : Type -> Type
   | int_expr : Int -> Expr Int
   | bool_expr : Bool -> Expr Bool
   | add_expr : Expr Int -> Expr Int -> Expr Int
   | eq_expr : %~A -> Expr A -> Expr A -> Expr Bool
 
-Vec : Nat -> Type -> Type  -- Dependent type
-Vec =
+data Vec : Nat -> Type -> Type
   | vnil : %~A -> Vec 0 A
-  | vcons : %(Nat ~ n) -> %~A -> A -> Vec n A -> Vec (Suc n) A
+  | vcons : %(Nat~n) -> %~A -> A -> Vec n A -> Vec (Suc n) A
 
-Person = {| name : Str, age : Nat |}
-p : Person
-p = { name = "Emma", age = 35 }
+Person = {| name : Str, age : Nat |};
+p : Person = { name = "Emma", age = 35 }
 
-Point = (|Int, Int|) 
-origin : Point
-origin = (0, 0)
-single_int : (|Int|)
-single_int = (1,)  -- Tuple with one single field, which must
-                   -- be followed by a trailing comma
+Point = (|Int, Int|);
+origin : Point = (0, 0);
+single_int = (1,)
 
-Str = [|Char|]
-greeting : Str
-greeting = ['H', 'e', 'l', 'l', 'o']
+Str = [|Char|];
+greeting : Str = ['H', 'e', 'l', 'l', 'o']
