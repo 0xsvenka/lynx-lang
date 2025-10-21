@@ -19,7 +19,7 @@ multi_line_str =
 -- A comment
 -- Another comment
 
-rtol (1..100)
+rtol (1..100 by 3)
   |> map (|x => x + 1)
   |> filter math::is_prime
   |> reduce (+)
