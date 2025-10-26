@@ -1,5 +1,5 @@
 Multiply : Type -> Type -> Type' =
-  | A B =>
+  | A, B =>
   {|
     R : Type,
     mul : A -> B -> R
