@@ -5,7 +5,7 @@ Stay tuned.
 
 ## Philosophy
 
-_"Unify, simplify, generalize - and make it intuitive."_
+> _Unify, simplify, generalize - and make it intuitive._
 
 Lynx is designed to be dynamic, flexible and concise, with a focus on reasonable abstractions such as:
 
