@@ -1,6 +1,6 @@
 import std::math
 
-f = |i, j => i + j
+f = | i, j => i + j
 
 a = 2; b = a;
 c0_' = '\0'
@@ -20,7 +20,7 @@ multi_line_str =
 -- Another comment
 
 rtol (1..100 by 3)
-  |> map (|x => x + 1)
+  |> map (| x => x + 1)
   |> filter math::is_prime
   |> reduce (+)
   |> println

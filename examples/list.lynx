@@ -82,9 +82,10 @@ scanl : %~A -> %~B -> (B -> A -> B) -> B -> [|A|] -> [|B|] =
 
 scanr : %~A -> %~B -> (A -> B -> B) -> B -> [|A|] -> [|B|] =
   | _, z, [] => [z]
-  | f, z, x+:xs => do (
-    ys = scanr f z xs;
-    f x (head! ys) +: ys 
+  | f, z, x+:xs =>
+    do (
+      ys = scanr f z xs;
+      f x (head! ys) +: ys
     )
 
 map : %~A -> %~B -> (A -> B) -> [|A|] -> [|B|] =

@@ -1,10 +1,10 @@
 use crate::{lexer::Lexer, parser::Parser};
 
-mod token;
-mod expr;
 mod error;
+mod expr;
 mod lexer;
 mod parser;
+mod token;
 
 fn main() {
     // TODO: Handle the situations where wrong args are given
