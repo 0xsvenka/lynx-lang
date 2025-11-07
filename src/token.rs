@@ -34,7 +34,6 @@ impl fmt::Display for Span {
 /// Different kinds of tokens.
 #[derive(Debug, Clone)]
 pub enum TokenKind {
-
     Id(
         /// The name of the identifier.
         String,
@@ -77,7 +76,6 @@ pub enum TokenKind {
     // Keywords (alphabetic & symbolic)
 
     // Alphabetic keywords
-
     /// The keyword `case`.
     Case,
     /// The keyword `import`.
@@ -96,7 +94,6 @@ pub enum TokenKind {
     Underscore,
 
     // Symbolic keywords
-
     /// The keyword `:`.
     Colon,
     /// The keyword `::`.
@@ -122,6 +119,7 @@ pub enum TokenKind {
     /// The keyword `(` (left parenthesis).
     Lp,
     /// The keyword `)` (right parenthesis).
+    // TODO: Remove the pipe-brackets
     Rp,
     /// The keyword `(|`.
     LpPipe,
@@ -141,9 +139,9 @@ pub enum TokenKind {
     Lc,
     /// The keyword `}` (right curly brace).
     Rc,
-    /// The keyword `{|`.
+    /// The keyword `{`.
     LcPipe,
-    /// The keyword `|}`.
+    /// The keyword `}`.
     PipeRc,
     /// The keyword `,`.
     Comma,

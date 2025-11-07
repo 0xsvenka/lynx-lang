@@ -1,37 +1,37 @@
 Functor : (Type -> Type) -> Type' =
   | F =>
-  {|
+  {
     fmap : %~A -> %~B -> (A -> B) -> F A -> F B
-  |}
+  }
 
 Applicative : (Type -> Type) -> Type' =
   | App =>
-  {|
+  {
     pure : %~A -> A -> App A,
     (<*>) : %~A -> %~B -> App (A->B) -> App A -> App B
-  |}
+  }
 
 Monad : (Type -> Type) -> Type' =
   | M =>
-  {|
+  {
     return : %~A -> A -> M A,
     (>>=) : %~A -> %~B -> M A -> (A -> M B) -> M B
-  |}
+  }
 
 functor_applicative :
     %~App -> #(Applicative App) -> Functor App =
   | #a =>
-  {|
+  {
     fmap = a.(<*>) * a.pure
-  |}
+  }
 
 applicative_monad :
     %~M -> #(Monad M) -> Applicative M =
   | #m =>
-  {|
+  {
     pure = m.return,
     (<*>) = | mf, ma =>
       mf m.>>= | f =>
       ma m.>>= | a =>
       m.return (f a)
-  |}
+  }

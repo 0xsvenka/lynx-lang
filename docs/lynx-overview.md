@@ -1,20 +1,20 @@
-# **Lynx Language Overview**
+# Lynx Programming Language Overview
 
-## **1. Design Philosophy**
+## 1. Design Philosophy
 
-_Unify, simplify, generalize - and make it intuitive._
+_Simplicity, generality, flexibility - and being intuitive._
 
 ---
 
-## **2. Basic Syntax & Layout**
+## 2. Basic Syntax & Layout Rules
 
-### **Paragraph-Based Layout**
+### Paragraph-based layout
 
-- **Blank lines** separate paragraphs.
+- Blank lines separate paragraphs.
 - Within a paragraph:
-  - Line breaks and indentation are **ignored**.
+  - Line breaks and indentation are ignored.
   - Expressions end with `;` or at paragraph end (implicit `;`).
-- Encourages one-expression-per-paragraph for functional constructs.
+- Encourages one-expression-per-paragraph style, which is natural for functional constructs.
 
 Example:
 
@@ -25,140 +25,133 @@ factorial =
 result = factorial 5
 ```
 
-### **Comments**
+### Comments
 
-- Line comments: `-- ...`.
+- Line comments: `-- This is a comment`.
 
-### **Literals**
+### Literals
 
-- Character literals: `'\0'`.
-- String literals: `"..."` (with escapes).
-- Multi-line strings: `\\...` (no escapes, line-prefix required).
+- Integers: `0b1001`, `-21534789639034149038653713981928045` (arbitrary size
+as long as the memory permits).
+- Floating-point numbers: `3.14`, `6.626e-34` (arbitrary precision as long as the memory permits).
+- Characters: `'a'`, `'\0'`.
+- Strings
+  - Double-quoted strings: `"Hello, World!\n"` (with escapes).
+  - Multi-line strings: `\\Each line starts with "\\" ...` (no escapes).
+- Lists: `[a, b, c]` desugars to `cons a (cons b (cons c nil))`.
+- Records: `{ name = "Luke" }`, whose type is written as `{ name : Str }`.
+- Tuples: `(1, 1.0, 'a')` desugars to `pair 1 (pair 1.0 'a')`, whose type is `Int * Float * Char`, or more verbosely, `Pair Int (Pair Float Char)`.
+
+  _As you might have guessed, this approach, i.e. modeling tuples as composition of pairs, does not recognize singleton tuples. We do have, however, a `()` literal that desugars to `unit` of type `Unit`._
 
 ---
 
-## **3. Core Primitives**
+## 3. Core Primitives
 
-### **Bindings**
+### Bindings
+
+Binds an expression to a name.
 
 ```lynx
 name = expression
 ```
 
-- Recursive by default.
+- Immutable and recursive by default.
 - No `let` needed; same syntax for both top-level and local bindings.
 
-### **Lambda with Pattern Matching**
+### Constructors
+
+Special names that describe patterns.
+
+```lynx
+ctor Option : Type -> Type;
+ctor some : %~A -> A -> Option A;
+ctor none : %~A -> Option A
+```
+
+- ADTs and GADTs implemented in the identical way.
+- Constructors occupy ordinary types; for instance, `some` is just a polymorphic function that takes a parameter of arbitrary type `A` and returns `Option A`.
+- Treated differently during pattern matching.
+
+### Pattern matching lambdas
 
 ```lynx
 | pattern => body
 ```
 
-- Multi-case, multi-argument (`|a, b => ...` ≡ curried).
-- Patterns: literals, constructors (`x+:xs`), wildcards (`_`), tuples, records, alternation (`| 1 | 2 =>`).
-- Used for **functions** and **case matching** (via the pipeline operator `|>`). Example:
+- `=>` is visually distinct from `->`, which is reserved for function types.
+- Patterns: atoms, literals, constructors, wildcards (`_`), alternation (`| 1 | 2 => ...`).
+- There is syntactic sugar for multi-argument functions (`| a, b => ...` becomes curried). This helps with complex patterns, e.g. `| _, [x], y+:ys => ...`.
+- Used as the primary way to define functions:
+
   ```lynx
-    value |>
-      | 0 => "zero"
-      | _ => "nonzero"
+  add = | a, b => a + b
   ```
 
+- Supports case matching naturally via the pipeline operator `|>`, eliminating the need for an additional "match expression".
 
-### **Function Application & Operators**
+  ```lynx
+  value |>
+    | 0 => "zero"
+    | _ => "nonzero"
+  ```
 
-- Application: `f x y` (left-associative).
-- Infix operators: `(+)`, `(++)`, `(+:)`, `(|>)` - ordinary functions defined with surrounding parentheses.
+### Function application & operators
+
+- Application: `f x y` (left-associative, natural currying).
+- Infix operators: `(+)`, `(++)`, `(|>)` etc are just ordinary functions defined with surrounding parentheses. Programmers can create new operators at their will.
 
 ---
 
-## **4. Type System: First-Class & Unified**
+## 4. Type System: Expressive & Innovative
 
-### **Types as Values**
+### Types as values
 
+- Structural typing instead of nominal typing.
 - Types are not erased; they exist at runtime.
-- Type constructors are functions: `List : Type -> Type`.
-- Application order is natural: `List Int`.
+- Types can be stored in lists, passed around to functions...
+- Type-level functions are no different from ordinary functions: `Id : Type -> Type`.
+- `List`, `Option` etc are just type-level constructors.
 
-### **(Generalized) Algebraic Data Types**
+### Parameter annotations
 
-```lynx
-data List : Type -> Type
-  | nil  : %~A -> List A
-  | cons : %~A -> A -> List A -> List A
-```
+`Type ~ value` - name the value of given type for later use in the same type expression, enabling dependent types:
 
-- Constructors are functions returning the type.
-- GADTs can be implemented in identical manner.
-
-### **Parameter Annotations (`~`)**
-
-- Bind the **value** of a given type for use in the same type expression:
   ```lynx
-  make_list : %(Type ~ A) -> A -> List A
+  make_list : (Type ~ A) -> A -> List A =
+    | _, a => [a];
+  l = make_list Int 5
   ```
 
-### **Inferable Parameters (`%`)**
+### Contextual parameters
 
-- `%T`: **inferred from context** (e.g., type of arguments).
-- Sugar: `%~A` ≡ `%(Type ~ A)` - "infer a type, name it `A`".
+`%T` - inferred from context (e.g., type of arguments), no need to pass the corresponding argument explicitly.
 
-### **Implicit Parameters (`#`)**
+- Syntactic sugar: `%~A` is equivalent to `%(Type ~ A)`, meaning "infer a type; name it `A`".
 
-- `#T`: resolved by **instance search** in current namespace.
+### Implicit parameters
+
+`#T` - resolved by instance search in current namespace, no need to pass the corresponding argument explicitly.
+
 - Instances are ordinary values of the corresponding type.
 - Enables ad-hoc polymorphism without magic:
+
   ```lynx
-  (*) : %~A -> %~B -> #((Multiply A B) ~ m) -> A -> B -> m.R
+  multiply_int : Multiply Int Int =
+  {
+    R = Int,
+    mul = __builtin_mul_int
+  }
+  (*) : %~A -> %~B -> #((Multiply A B)~m) -> A -> B -> m.R
     = m.mul
   ```
 
 ---
 
-## **5. Ad-Hoc Polymorphism**
-
-- **Type classes = records**.
-- **Instances = named values** of those record types.
-- Resolution is lexical, not global-no orphan instances.
-- Full introspection: access associated types (`m.R`) and methods (`e.(==)`).
-
-Example:
-
-```lynx
-eq_complex : %~A -> #(Eq A) -> Eq (Complex A) =
-  | #e =>
-  {
-    (==) (complex a1 b1) (complex a2 b2) =
-      e.(==) a1 a2 && e.(==) b1 b2,
-    (eq_default (==))...
-  }
-```
+## 5. Modules and Namespaces (TODO)
 
 ---
 
-## **6. Other Builtin Syntax**
+## 6. Metaprogramming (TODO)
 
-| Syntax        | Meaning                 |
-| ------------- | ----------------------- |
-| `[\|A\|]`     | `List A`                |
-| `[]`          | `nil`                   |
-| `[x, y]`      | List literal            |
-| `(\|A, B\|)`  | Tuple type              |
-| `(x, y)`      | Tuple literal           |
-| `(x,)`        | Singleton tuple literal |
-| `{\|x : A\|}` | Record type             |
-| `{ x = a }`   | Record literal          |
-
-### **Record Extension (`...`)**
-
-- `(eq_default (==))...` spreads fields from a helper into a record.
-- Reduces boilerplate in instance definitions.
-
----
-
-## **7. Metaprogramming Vision**
-
-Lynx does not enforce a strict phase distinction between compile-time and runtime. Types are retained and can be computed, stored, and inspected at runtime, which paves the way for **type-rich metaprogramming**.
-
----
-
-Lynx is not merely a language - it’s a coherent vision for how programming _could feel_: **simple at the surface, powerful at the core, and unified throughout**.
+Lynx does not enforce a strict phase distinction between compile-time and runtime. Types are retained and can be computed, stored, and inspected at runtime, which should pave the way for type-rich metaprogramming.

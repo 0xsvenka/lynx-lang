@@ -1,21 +1,18 @@
 # The Lynx Programming Language
 
-It's still in the early stage of development.
-Stay tuned.
+It's still in the early stage of development. Stay tuned.
 
 ## Philosophy
 
-> _Unify, simplify, generalize - and make it intuitive._
+_Simplicity, generality, flexibility - and being intuitive._
 
-Lynx is designed to be dynamic, flexible and concise, with a focus on reasonable abstractions such as:
+Lynx focuses on reasonable abstractions such as:
 
--   a delicate type system, where types are first-class values;
+- A delicate type system featuring first-class types, [parameter annotations](docs/lynx-overview.md#parameter-annotations), [contextual](docs/lynx-overview.md#contextual-parameters) & [implicit parameters](docs/lynx-overview.md#implicit-parameters)...
+- Lambda expressions with multi-branch pattern matching.
+- Customizable infix operators and metaprogramming capability.
 
--   lambda expressions with multi-branch pattern matching as a primitive;
-
--   customizable infix operators and metaprogramming capability.
-
-It encourges a functional style, and yet emphasizes expressive freedom over enforced paradigm.
+It encourges a functional style, and yet emphasizes freedom of expression over an enforced paradigm.
 
 ## Documentation
 

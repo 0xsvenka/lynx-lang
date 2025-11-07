@@ -1,6 +1,12 @@
 use std::{collections::HashMap, iter::Peekable, str::Chars};
 
-use crate::{error::Error, token::{Pos, Span, Token, TokenKind::{self, *}}};
+use crate::{
+    error::Error,
+    token::{
+        Pos, Span, Token,
+        TokenKind::{self, *},
+    },
+};
 
 /// Lexer for Lynx source code. It recognizes [`Token`]s (or [`Error`]s)
 /// from a string.
@@ -22,7 +28,6 @@ pub struct Lexer<'a> {
 }
 
 impl<'a> Lexer<'a> {
-
     /// Creates a [`Lexer`] from a [`&str`](str).
     pub fn new(src: &'a str) -> Self {
         Self {
@@ -30,26 +35,26 @@ impl<'a> Lexer<'a> {
             pos: Pos(1, 0),
 
             alpha_kw_table: HashMap::from([
-                ("case"     , Case),
-                ("import"   , Import),
-                ("infix"    , Infix),
-                ("infixl"   , Infixl),
-                ("infixr"   , Infixr),
-                ("of"       , Of),
-                ("_"        , Underscore),
+                ("case", Case),
+                ("import", Import),
+                ("infix", Infix),
+                ("infixl", Infixl),
+                ("infixr", Infixr),
+                ("of", Of),
+                ("_", Underscore),
             ]),
             sym_kw_table: HashMap::from([
-                (":"        , Colon),
-                ("::"       , DoubleColon),
-                ("."        , Dot),
-                ("->"       , Arrow),
-                ("=>"       , FatArrow),
-                ("="        , Bind),
-                ("@"        , At),
-                ("|"        , Pipe),
-                ("%"        , Percent),
-                ("~"        , Tilde),
-                ("%~"       , PercentTilde),
+                (":", Colon),
+                ("::", DoubleColon),
+                (".", Dot),
+                ("->", Arrow),
+                ("=>", FatArrow),
+                ("=", Bind),
+                ("@", At),
+                ("|", Pipe),
+                ("%", Percent),
+                ("~", Tilde),
+                ("%~", PercentTilde),
             ]),
         }
     }
@@ -100,31 +105,30 @@ impl<'a> Lexer<'a> {
 
     /// Lexes character literals.
     fn lex_char_lit(&mut self) -> Result<Token, Error> {
-        self.advance_in_same_line();    // Skip opening quote
+        self.advance_in_same_line(); // Skip opening quote
         let start_pos = self.pos;
         let mut ch_vec = Vec::new();
 
         loop {
             match self.chars.peek() {
-                Some('\'') => {     // Closing quote
+                Some('\'') => {
+                    // Closing quote
                     self.advance_in_same_line();
                     match ch_vec.len() {
                         0 => {
-                            return Err(Error::EmptyCharLit(
-                                Span(start_pos, self.pos)));
+                            return Err(Error::EmptyCharLit(Span(start_pos, self.pos)));
                         }
                         1 => {
-                            return Ok(Token(CharLit(ch_vec[0]),
-                                Span(start_pos, self.pos)));
+                            return Ok(Token(CharLit(ch_vec[0]), Span(start_pos, self.pos)));
                         }
                         _ => {
-                            return Err(Error::MultipleCharsInCharLit(
-                                Span(start_pos, self.pos)));
+                            return Err(Error::MultipleCharsInCharLit(Span(start_pos, self.pos)));
                         }
                     }
                 }
 
-                Some('\\') => {     // Escape sequence
+                Some('\\') => {
+                    // Escape sequence
                     self.advance_in_same_line();
                     let esc_start_pos = self.pos;
 
@@ -158,15 +162,13 @@ impl<'a> Lexer<'a> {
                             '"'
                         }
                         // TODO: Support \u escape sequences
-
                         Some(&c) => {
                             if c == '\n' {
                                 self.advance_to_next_line();
                             } else {
                                 self.advance_in_same_line();
                             }
-                            return Err(Error::UnknownEscapeSeq(
-                                    Span(esc_start_pos, self.pos)));
+                            return Err(Error::UnknownEscapeSeq(Span(esc_start_pos, self.pos)));
                         }
                         None => {
                             return Err(Error::UnterminatedCharLit(start_pos));
@@ -195,19 +197,20 @@ impl<'a> Lexer<'a> {
 
     /// Lexes string literals.
     fn lex_str_lit(&mut self) -> Result<Token, Error> {
-        self.advance_in_same_line();    // Skip opening quote
+        self.advance_in_same_line(); // Skip opening quote
         let start_pos = self.pos;
         let mut s = String::new();
 
         loop {
             match self.chars.peek() {
-                Some('"') => {    // Closing quote
+                Some('"') => {
+                    // Closing quote
                     self.advance_in_same_line();
-                    return Ok(Token(StrLit(s),
-                            Span(start_pos, self.pos)));
+                    return Ok(Token(StrLit(s), Span(start_pos, self.pos)));
                 }
 
-                Some('\\') => {   // Escape sequence
+                Some('\\') => {
+                    // Escape sequence
                     self.advance_in_same_line();
                     let esc_start_pos = self.pos;
 
@@ -241,15 +244,13 @@ impl<'a> Lexer<'a> {
                             '"'
                         }
                         // TODO: Support \u escape sequences
-
                         Some(&c) => {
                             if c == '\n' {
                                 self.advance_to_next_line();
                             } else {
                                 self.advance_in_same_line();
                             }
-                            return Err(Error::UnknownEscapeSeq(
-                                    Span(esc_start_pos, self.pos)));
+                            return Err(Error::UnknownEscapeSeq(Span(esc_start_pos, self.pos)));
                         }
                         None => {
                             return Err(Error::UnterminatedStrLit(start_pos));
@@ -306,19 +307,15 @@ impl<'a> Lexer<'a> {
 
         if is_float {
             if let Ok(num) = num_str.parse::<f64>() {
-                Ok(Token(FloatLit(num),
-                    Span(start_pos, self.pos)))
+                Ok(Token(FloatLit(num), Span(start_pos, self.pos)))
             } else {
-                Err(Error::InvalidNumLitFormat(
-                    Span(start_pos, self.pos)))
+                Err(Error::InvalidNumLitFormat(Span(start_pos, self.pos)))
             }
         } else {
             if let Ok(num) = num_str.parse::<i64>() {
-                Ok(Token(IntLit(num),
-                    Span(start_pos, self.pos)))
+                Ok(Token(IntLit(num), Span(start_pos, self.pos)))
             } else {
-                Err(Error::InvalidNumLitFormat(
-                    Span(start_pos, self.pos)))
+                Err(Error::InvalidNumLitFormat(Span(start_pos, self.pos)))
             }
         }
     }
@@ -329,8 +326,7 @@ impl<'a> Lexer<'a> {
         let mut name = String::new();
 
         while let Some(&c) = self.chars.peek() {
-            if !(c.is_alphanumeric()
-                    || c == '\'' || c == '!' || c == '_') {
+            if !(c.is_alphanumeric() || c == '\'' || c == '!' || c == '_') {
                 break;
             }
             name.push(c);
@@ -338,11 +334,8 @@ impl<'a> Lexer<'a> {
         }
 
         match self.alpha_kw_table.get(name.as_str()) {
-            Some(keyword_token) =>
-                    Token(keyword_token.to_owned(),
-                        Span(start_pos, self.pos)),
-            None => Token(Id(name),
-                        Span(start_pos, self.pos)),
+            Some(keyword_token) => Token(keyword_token.to_owned(), Span(start_pos, self.pos)),
+            None => Token(Id(name), Span(start_pos, self.pos)),
         }
     }
 
@@ -355,13 +348,27 @@ impl<'a> Lexer<'a> {
         let mut name = String::new();
 
         while let Some(&c) = self.chars.peek() {
-            if !(c == '~' || c == '`' || c == '!' ||
-                 c == '@' || c == '$' || c == '%' ||
-                 c == '^' || c == '&' || c == '*' ||
-                 c == '-' || c == '+' || c == '=' ||
-                 c == '|' || c == ':' || c == '<' ||
-                 c == '>' || c == '.' || c == '?' ||
-                 c == '/' || c == '\''|| c =='_')
+            if !(c == '~'
+                || c == '`'
+                || c == '!'
+                || c == '@'
+                || c == '$'
+                || c == '%'
+                || c == '^'
+                || c == '&'
+                || c == '*'
+                || c == '-'
+                || c == '+'
+                || c == '='
+                || c == '|'
+                || c == ':'
+                || c == '<'
+                || c == '>'
+                || c == '.'
+                || c == '?'
+                || c == '/'
+                || c == '\''
+                || c == '_')
             {
                 break;
             }
@@ -370,11 +377,8 @@ impl<'a> Lexer<'a> {
         }
 
         match self.sym_kw_table.get(name.as_str()) {
-            Some(keyword_token) =>
-                    Token(keyword_token.to_owned(),
-                        Span(start_pos, self.pos)),
-            None => Token(Id(name),
-                        Span(start_pos, self.pos)),
+            Some(keyword_token) => Token(keyword_token.to_owned(), Span(start_pos, self.pos)),
+            None => Token(Id(name), Span(start_pos, self.pos)),
         }
     }
 
@@ -403,9 +407,7 @@ impl<'a> Lexer<'a> {
             }
             // Otherwise, this is just the beginning of something
             // like a symbolic identifier
-            _ => {
-                self.lex_sym()
-            }
+            _ => self.lex_sym(),
         }
     }
 
@@ -424,9 +426,7 @@ impl<'a> Lexer<'a> {
             }
             // Otherwise, this is just the beginning of something
             // like a symbolic identifier
-            _ => {
-                self.lex_sym()
-            }
+            _ => self.lex_sym(),
         }
     }
 
@@ -527,68 +527,46 @@ impl<'a> Iterator for Lexer<'a> {
                 self.skip_line_comment();
                 self.next()
             }
-            '\'' => {
-                Some(self.lex_char_lit())
-            }
-            '"' => {
-                Some(self.lex_str_lit())
-            }
-            &c if c.is_ascii_digit() => {
-                Some(self.lex_num_lit())
-            }
-            &c if c.is_alphabetic() || c == '_' => {
-                Some(Ok(self.lex_alpha()))
-            }
-            &c
-                 if c == '~' || c == '`' || c == '!' ||
-                    c == '@' || c == '$' || c == '%' ||
-                    c == '^' || c == '&' || c == '*' ||
-                    c == '-' || c == '+' || c == '=' ||
-                    c == ':' || c == '<' || c == '>' ||
-                    c == '?' || c == '/'
-                => {
+            '\'' => Some(self.lex_char_lit()),
+            '"' => Some(self.lex_str_lit()),
+            &c if c.is_ascii_digit() => Some(self.lex_num_lit()),
+            &c if c.is_alphabetic() || c == '_' => Some(Ok(self.lex_alpha())),
+            &c if c == '~'
+                || c == '`'
+                || c == '!'
+                || c == '@'
+                || c == '$'
+                || c == '%'
+                || c == '^'
+                || c == '&'
+                || c == '*'
+                || c == '-'
+                || c == '+'
+                || c == '='
+                || c == ':'
+                || c == '<'
+                || c == '>'
+                || c == '?'
+                || c == '/' =>
+            {
                 Some(Ok(self.lex_sym()))
             }
             // '|' is left out from the branch above and handled
-            // specially, since it can lead "|)", "|]", and "|}"
-            '|' => {
-                Some(Ok(self.lex_pipe()))
-            }
+            // specially, since it can lead "|)", "|]", and "}"
+            '|' => Some(Ok(self.lex_pipe())),
             // '.' is left out from the branch above and handled
             // specially as well, since it can lead ".["
-            '.' => {
-                Some(Ok(self.lex_dot()))
-            }
-            '(' => {
-                Some(Ok(self.lex_lp()))
-            }
-            ')' => {
-                Some(Ok(self.lex_rp()))
-            }
-            '[' => {
-                Some(Ok(self.lex_lb()))
-            }
-            ']' => {
-                Some(Ok(self.lex_rb()))
-            }
-            '{' => {
-                Some(Ok(self.lex_lc()))
-            }
-            '}' => {
-                Some(Ok(self.lex_rc()))
-            }
-            ',' => {
-                Some(Ok(self.lex_comma()))
-            }
-            ';' => {
-                Some(Ok(self.lex_semicolon()))
-            }
-            '\n' => {
-                Some(Ok(self.lex_eol()))
-            }
-            '\\' => {
-                Some(Ok(self.lex_backslash()))
-            }
+            '.' => Some(Ok(self.lex_dot())),
+            '(' => Some(Ok(self.lex_lp())),
+            ')' => Some(Ok(self.lex_rp())),
+            '[' => Some(Ok(self.lex_lb())),
+            ']' => Some(Ok(self.lex_rb())),
+            '{' => Some(Ok(self.lex_lc())),
+            '}' => Some(Ok(self.lex_rc())),
+            ',' => Some(Ok(self.lex_comma())),
+            ';' => Some(Ok(self.lex_semicolon())),
+            '\n' => Some(Ok(self.lex_eol())),
+            '\\' => Some(Ok(self.lex_backslash())),
 
             // The lookahead cannot be lexed
             _ => {

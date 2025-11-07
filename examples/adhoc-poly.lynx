@@ -1,9 +1,9 @@
 Multiply : Type -> Type -> Type' =
   | A, B =>
-  {|
+  {
     R : Type,
     mul : A -> B -> R
-  |}
+  }
 
 multiply_int : Multiply Int Int =
   {
@@ -25,10 +25,10 @@ composition : %~A -> %~B -> %~C
 
 Functor : (Type -> Type) -> Type' =
   | F =>
-  {|
+  {
     fmap : %~A -> %~B
-      -> (A -> B) -> F A -> F B 
-  |}
+      -> (A -> B) -> F A -> F B
+  }
 
 functor_list : Functor List =
   {
@@ -38,10 +38,10 @@ functor_list : Functor List =
 
 Eq : Type -> Type =
   | A =>
-  {|
+  {
     (==) : A -> A -> Bool,
     (!=) : A -> A -> Bool
-  |}
+  }
 
 eq_default :
     %~A -> (A -> A -> Bool) -> (A -> A -> Bool) =
