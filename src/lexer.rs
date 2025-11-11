@@ -1,4 +1,4 @@
-use std::{collections::HashMap, iter::Peekable, str::Chars};
+use std::{collections::HashMap, collections::HashSet, iter::Peekable, str::Chars};
 
 use crate::{
     error::Error,
@@ -8,23 +8,29 @@ use crate::{
     },
 };
 
-/// Lexer for Lynx source code. It recognizes [`Token`]s (or [`Error`]s)
-/// from a string.
+/// Lexer for Lynx code.
 pub struct Lexer<'a> {
-    /// A peekable iterator over the source code.
+    /// A peekable iterator over the source text.
     chars: Peekable<Chars<'a>>,
 
-    /// Current position in the source file.
+    /// Current position in the source text.
     pos: Pos,
 
-    /// Table of Lynx's alphabetic keywords & corresponding [`TokenKind`]s.
+    /// Table of Lynx's alphabetic keywords & corresponding [`TokenKind`]s,
+    /// used for distinguishing keywords from identifiers.
     alpha_kw_table: HashMap<&'a str, TokenKind>,
-    /// Table of Lynx's symbolic keywords & corresponding [`TokenKind`]s.
-    /// This is used for distinguishing keywords from identifiers,
-    /// and since `(`, `)`, `[`, `]`, `{`, `}`, `,`, `;` and `\` are
-    /// not allowed in identifiers, the keywords containing them are
-    /// left out from this table and lexed separately.
+
+    /// Table of Lynx's symbolic keywords & corresponding [`TokenKind`]s,
+    /// used for distinguishing keywords from identifiers.
+    ///
+    /// Since `(`, `)`, `[`, `]`, `{`, `}`, `,`, and `;` are
+    /// not allowed in identifiers, the corresponding keywords are
+    /// left out from this table.
     sym_kw_table: HashMap<&'a str, TokenKind>,
+
+    /// Set of characters that are allowed as the _beginning_ of a
+    /// symbolic identifier.
+    sym_char_set: HashSet<char>,
 }
 
 impl<'a> Lexer<'a> {
@@ -34,15 +40,7 @@ impl<'a> Lexer<'a> {
             chars: src.chars().peekable(),
             pos: Pos(1, 0),
 
-            alpha_kw_table: HashMap::from([
-                ("case", Case),
-                ("import", Import),
-                ("infix", Infix),
-                ("infixl", Infixl),
-                ("infixr", Infixr),
-                ("of", Of),
-                ("_", Underscore),
-            ]),
+            alpha_kw_table: HashMap::from([("ctor", Ctor), ("import", Import), ("_", Underscore)]),
             sym_kw_table: HashMap::from([
                 (":", Colon),
                 ("::", DoubleColon),
@@ -52,14 +50,19 @@ impl<'a> Lexer<'a> {
                 ("=", Bind),
                 ("@", At),
                 ("|", Pipe),
+                ("#", Hash),
                 ("%", Percent),
                 ("~", Tilde),
                 ("%~", PercentTilde),
             ]),
+            sym_char_set: HashSet::from([
+                '~', '`', '!', '@', '#', '$', '%', '^', '&', '*', '-', '+', '=', '|', '\\', ':',
+                '<', '>', '.', '?', '/',
+            ]),
         }
     }
 
-    /// Updates the inner state of the lexer,
+    /// Updates the state of the lexer
     /// when we are advancing in the same line.
     #[inline]
     fn advance_in_same_line(&mut self) {
@@ -67,20 +70,22 @@ impl<'a> Lexer<'a> {
         self.chars.next();
     }
 
-    /// Updates the inner state of the lexer,
-    /// when we are advancing to the *line break*.
-    /// After calling this function, `self.pos`
-    /// becomes `Pos(/*next_line_number*/, 0)`.
+    /// Updates the state of the lexer
+    /// when we are advancing to the _line break_.
+    ///
+    /// After calling this function,
+    /// `self.pos` becomes [`Pos(/*next_line_number*/, 0)`](crate::token::Pos).
     #[inline]
     fn advance_to_next_line(&mut self) {
         self.pos.0 += 1;
-        // We haven't come to the first character of the next line yet
         self.pos.1 = 0;
         self.chars.next();
     }
 
-    /// Skips whitespaces. Note that this function does
-    /// not skip `\n`, since it should be lexed as [`ExprEnd`].
+    /// Skips whitespaces.
+    ///
+    /// Note that `\n` is not skipped here and is handled in
+    /// [`Lexer::lex_eol`] instead.
     fn skip_ws(&mut self) {
         while let Some(&c) = self.chars.peek() {
             if !c.is_whitespace() || c == '\n' {
@@ -90,9 +95,10 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    /// Skips line comment starting with `#`. Note that
-    /// this function does not skip `\n` at the end of the
-    /// line, since it should be lexed as [`ExprEnd`].
+    /// Skips line comments starting with `--`.
+    ///
+    /// Note that the `\n` at the end of the line is not
+    /// skipped here and is handled in [`Lexer""lex_eol`] instead.
     fn skip_line_comment(&mut self) {
         while let Some(&c) = self.chars.peek() {
             if c == '\n' {
@@ -280,9 +286,11 @@ impl<'a> Lexer<'a> {
 
     // TODO: Support more number formats, like base prefixes and underscores
     /// Lexes number literals.
-    fn lex_num_lit(&mut self) -> Result<Token, Error> {
-        let start_pos = Pos(self.pos.0, self.pos.1 + 1);
+    fn lex_num_lit(&mut self, lookahead: char) -> Result<Token, Error> {
+        self.advance_in_same_line();
+        let start_pos = self.pos;
         let mut num_str = String::new();
+        num_str.push(lookahead);
         let mut is_float = false;
 
         while let Some(&c) = self.chars.peek() {
@@ -321,12 +329,14 @@ impl<'a> Lexer<'a> {
     }
 
     /// Lexes alphabetic identifiers and keywords.
-    fn lex_alpha(&mut self) -> Token {
-        let start_pos = Pos(self.pos.0, self.pos.1 + 1);
+    fn lex_alpha(&mut self, lookahead: char) -> Token {
+        self.advance_in_same_line();
+        let start_pos = self.pos;
         let mut name = String::new();
+        name.push(lookahead);
 
         while let Some(&c) = self.chars.peek() {
-            if !(c.is_alphanumeric() || c == '\'' || c == '!' || c == '_') {
+            if !(c.is_alphanumeric() || c == '_' || c == '\'' || c == '!') {
                 break;
             }
             name.push(c);
@@ -334,42 +344,24 @@ impl<'a> Lexer<'a> {
         }
 
         match self.alpha_kw_table.get(name.as_str()) {
-            Some(keyword_token) => Token(keyword_token.to_owned(), Span(start_pos, self.pos)),
+            Some(kw_token_kind) => Token(kw_token_kind.to_owned(), Span(start_pos, self.pos)),
             None => Token(Id(name), Span(start_pos, self.pos)),
         }
     }
 
     /// Lexes symbolic identifiers and keywords.
-    /// Since `(`, `)`, `[`, `]`, `{`, `}`, `,`, `;` and `\` are
-    /// not allowed in identifiers, the keywords containing them are
-    /// not handled in this function. Instead, they are lexed separately.
-    fn lex_sym(&mut self) -> Token {
-        let start_pos = Pos(self.pos.0, self.pos.1 + 1);
+    ///
+    /// Since characters `(`, `)`, `[`, `]`, `{`, `}`, `,`, and `;`
+    /// are not allowed in identifiers, the corresponding keywords
+    /// are not handled by this function but lexed separately instead.
+    fn lex_sym(&mut self, lookahead: char) -> Token {
+        self.advance_in_same_line();
+        let start_pos = self.pos;
         let mut name = String::new();
+        name.push(lookahead);
 
         while let Some(&c) = self.chars.peek() {
-            if !(c == '~'
-                || c == '`'
-                || c == '!'
-                || c == '@'
-                || c == '$'
-                || c == '%'
-                || c == '^'
-                || c == '&'
-                || c == '*'
-                || c == '-'
-                || c == '+'
-                || c == '='
-                || c == '|'
-                || c == ':'
-                || c == '<'
-                || c == '>'
-                || c == '.'
-                || c == '?'
-                || c == '/'
-                || c == '\''
-                || c == '_')
-            {
+            if !(self.sym_char_set.contains(&c) || c == '_' || c == '\'') {
                 break;
             }
             name.push(c);
@@ -377,141 +369,62 @@ impl<'a> Lexer<'a> {
         }
 
         match self.sym_kw_table.get(name.as_str()) {
-            Some(keyword_token) => Token(keyword_token.to_owned(), Span(start_pos, self.pos)),
+            Some(kw_token_kind) => Token(kw_token_kind.to_owned(), Span(start_pos, self.pos)),
             None => Token(Id(name), Span(start_pos, self.pos)),
         }
     }
 
-    /// Handles situations where the lookahead is `|`.
-    fn lex_pipe(&mut self) -> Token {
-        let start_pos = Pos(self.pos.0, self.pos.1 + 1);
-
-        // This is for performing the second lookahead
-        let mut temp_iter = self.chars.clone();
-        temp_iter.next();
-        match temp_iter.peek() {
-            Some(')') => {
-                self.advance_in_same_line();
-                self.advance_in_same_line();
-                Token(PipeRp, Span(start_pos, self.pos))
-            }
-            Some(']') => {
-                self.advance_in_same_line();
-                self.advance_in_same_line();
-                Token(PipeRb, Span(start_pos, self.pos))
-            }
-            Some('}') => {
-                self.advance_in_same_line();
-                self.advance_in_same_line();
-                Token(PipeRc, Span(start_pos, self.pos))
-            }
-            // Otherwise, this is just the beginning of something
-            // like a symbolic identifier
-            _ => self.lex_sym(),
-        }
-    }
-
-    /// Handles situations where the lookahead is `.`.
-    fn lex_dot(&mut self) -> Token {
-        let start_pos = Pos(self.pos.0, self.pos.1 + 1);
-
-        // This is for performing the second lookahead
-        let mut temp_iter = self.chars.clone();
-        temp_iter.next();
-        match temp_iter.peek() {
-            Some('[') => {
-                self.advance_in_same_line();
-                self.advance_in_same_line();
-                Token(DotLp, Span(start_pos, self.pos))
-            }
-            // Otherwise, this is just the beginning of something
-            // like a symbolic identifier
-            _ => self.lex_sym(),
-        }
-    }
-
-    /// Handles situations where the lookahead is `(`.
+    /// Handles lookahead `(`.
     fn lex_lp(&mut self) -> Token {
-        let start_pos = Pos(self.pos.0, self.pos.1 + 1);
         self.advance_in_same_line();
-        if let Some('|') = self.chars.peek() {
-            self.advance_in_same_line();
-            Token(LpPipe, Span(start_pos, self.pos))
-        } else {
-            Token(Lp, Span(start_pos, self.pos))
-        }
+        Token(Lp, Span(self.pos, self.pos))
     }
 
-    /// Handles situations where the lookahead is `)`.
+    /// Handles lookahead `)`.
     fn lex_rp(&mut self) -> Token {
-        let start_pos = Pos(self.pos.0, self.pos.1 + 1);
         self.advance_in_same_line();
-        Token(Rp, Span(start_pos, self.pos))
+        Token(Rp, Span(self.pos, self.pos))
     }
 
-    /// Handles situations where the lookahead is `[`.
+    /// Handles lookahead `[`.
     fn lex_lb(&mut self) -> Token {
-        let start_pos = Pos(self.pos.0, self.pos.1 + 1);
         self.advance_in_same_line();
-        if let Some('|') = self.chars.peek() {
-            self.advance_in_same_line();
-            Token(LbPipe, Span(start_pos, self.pos))
-        } else {
-            Token(Lb, Span(start_pos, self.pos))
-        }
+        Token(Lb, Span(self.pos, self.pos))
     }
 
-    /// Handles situations where the lookahead is `]`.
+    /// Handles lookahead `]`.
     fn lex_rb(&mut self) -> Token {
-        let start_pos = Pos(self.pos.0, self.pos.1 + 1);
         self.advance_in_same_line();
-        Token(Rb, Span(start_pos, self.pos))
+        Token(Rb, Span(self.pos, self.pos))
     }
 
-    /// Handles situations where the lookahead is `{`.
+    /// Handles lookahead `{`.
     fn lex_lc(&mut self) -> Token {
-        let start_pos = Pos(self.pos.0, self.pos.1 + 1);
         self.advance_in_same_line();
-        if let Some('|') = self.chars.peek() {
-            self.advance_in_same_line();
-            Token(LcPipe, Span(start_pos, self.pos))
-        } else {
-            Token(Lc, Span(start_pos, self.pos))
-        }
+        Token(Lc, Span(self.pos, self.pos))
     }
 
-    /// Handles situations where the lookahead is `}`.
+    /// Handles lookahead `}`.
     fn lex_rc(&mut self) -> Token {
-        let start_pos = Pos(self.pos.0, self.pos.1 + 1);
         self.advance_in_same_line();
-        Token(Rc, Span(start_pos, self.pos))
+        Token(Rc, Span(self.pos, self.pos))
     }
 
-    /// Handles situations where the lookahead is `,`.
+    /// Handles lookahead `,`.
     fn lex_comma(&mut self) -> Token {
-        let start_pos = Pos(self.pos.0, self.pos.1 + 1);
         self.advance_in_same_line();
-        Token(Comma, Span(start_pos, self.pos))
+        Token(Comma, Span(self.pos, self.pos))
     }
 
-    /// Handles situations where the lookahead is `;`.
+    /// Handles lookahead `;`.
     fn lex_semicolon(&mut self) -> Token {
-        let start_pos = Pos(self.pos.0, self.pos.1 + 1);
         self.advance_in_same_line();
-        Token(ExprEnd, Span(start_pos, self.pos))
-    }
-
-    /// Handles situations where the lookahead is `\n`.
-    fn lex_eol(&mut self) -> Token {
-        self.advance_to_next_line();
         Token(ExprEnd, Span(self.pos, self.pos))
     }
 
-    /// Handles situations where the lookahead is `\`.
-    fn lex_backslash(&mut self) -> Token {
-        let start_pos = Pos(self.pos.0, self.pos.1 + 1);
-        self.advance_in_same_line();
-        Token(ExprContinue, Span(start_pos, self.pos))
+    /// Handles lookahead `\n`.
+    fn lex_eol(&mut self) -> Token {
+        todo!()
     }
 }
 
@@ -523,40 +436,11 @@ impl<'a> Iterator for Lexer<'a> {
         self.skip_ws();
 
         match self.chars.peek()? {
-            '#' => {
-                self.skip_line_comment();
-                self.next()
-            }
             '\'' => Some(self.lex_char_lit()),
             '"' => Some(self.lex_str_lit()),
-            &c if c.is_ascii_digit() => Some(self.lex_num_lit()),
-            &c if c.is_alphabetic() || c == '_' => Some(Ok(self.lex_alpha())),
-            &c if c == '~'
-                || c == '`'
-                || c == '!'
-                || c == '@'
-                || c == '$'
-                || c == '%'
-                || c == '^'
-                || c == '&'
-                || c == '*'
-                || c == '-'
-                || c == '+'
-                || c == '='
-                || c == ':'
-                || c == '<'
-                || c == '>'
-                || c == '?'
-                || c == '/' =>
-            {
-                Some(Ok(self.lex_sym()))
-            }
-            // '|' is left out from the branch above and handled
-            // specially, since it can lead "|)", "|]", and "}"
-            '|' => Some(Ok(self.lex_pipe())),
-            // '.' is left out from the branch above and handled
-            // specially as well, since it can lead ".["
-            '.' => Some(Ok(self.lex_dot())),
+            &c if c.is_ascii_digit() => Some(self.lex_num_lit(c)),
+            &c if c.is_alphabetic() || c == '_' => Some(Ok(self.lex_alpha(c))),
+            &c if self.sym_char_set.contains(&c) => Some(Ok(self.lex_sym(c))),
             '(' => Some(Ok(self.lex_lp())),
             ')' => Some(Ok(self.lex_rp())),
             '[' => Some(Ok(self.lex_lb())),
@@ -566,7 +450,6 @@ impl<'a> Iterator for Lexer<'a> {
             ',' => Some(Ok(self.lex_comma())),
             ';' => Some(Ok(self.lex_semicolon())),
             '\n' => Some(Ok(self.lex_eol())),
-            '\\' => Some(Ok(self.lex_backslash())),
 
             // The lookahead cannot be lexed
             _ => {
