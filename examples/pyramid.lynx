@@ -11,7 +11,7 @@ zero : %~A -> Parser A =
 
 item : Parser Char =
   | [] => []
-  | x+:xs => [(x,xs)]
+  | x+:xs => [(x, xs)]
 
 monad_parser : Monad Parser =
   {

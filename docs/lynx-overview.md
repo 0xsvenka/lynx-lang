@@ -23,6 +23,8 @@ factorial =
   | 0 => 1
   | n => n * factorial (n - 1);
 result = factorial 5
+
+println result
 ```
 
 ### Comments
@@ -69,7 +71,7 @@ ctor some : %~A -> A -> Option A;
 ctor none : %~A -> Option A
 ```
 
-- ADTs and GADTs implemented in the identical way.
+- ADTs and GADTs implemented in identical manner.
 - Constructors occupy ordinary types; for instance, `some` is just a polymorphic function that takes a parameter of arbitrary type `A` and returns `Option A`.
 - Treated differently during pattern matching.
 
@@ -142,6 +144,7 @@ ctor none : %~A -> Option A
     R = Int,
     mul = __builtin_mul_int
   }
+
   (*) : %~A -> %~B -> #((Multiply A B)~m) -> A -> B -> m.R
     = m.mul
   ```

@@ -79,8 +79,7 @@ scanl : %~A -> %~B -> (B -> A -> B) -> B -> List A ->  =
 
 scanr : %~A -> %~B -> (A -> B -> B) -> B -> List A -> List B =
   | _, z, [] => [z]
-  | f, z, x+:xs =>
-    do (
+  | f, z, x+:xs => (
       ys = scanr f z xs;
       f x (head! ys) +: ys
     )

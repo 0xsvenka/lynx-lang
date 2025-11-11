@@ -15,10 +15,13 @@ multi_line_str =
   \\" ' \ \\ \n
   \\You will get a trailing '\n' due to the next line
   \\
-
--- A comment
+  ;
+println multi_line_str  -- A comment
 -- Another comment
 
+-- A comment in the middle
+
+-- Yet another comment
 rtol (1..100 by 3)
   |> map (| x => x + 1)
   |> filter math::is_prime
@@ -33,3 +36,9 @@ ii = 3;
 ss = ii |>
   | 1 | 2 => "small"
   | _ => "big"
+
+ad -- 1321
+-- 13d
+1huqe
+
+d
