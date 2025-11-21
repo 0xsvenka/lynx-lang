@@ -1,49 +1,71 @@
 use std::{error, fmt};
 
-use crate::token::{Pos, Span};
+use crate::token::Pos;
 
-/// All errors that may occur during the whole process,
-/// including lexing errors, parsing errors, ...
+/// Errors that may occur during the compiling process,
+/// including lexing errors, parsing errors, etc.
 #[derive(Debug)]
 pub enum Error {
     // Lexing errors
     /// Empty character literal.
-    EmptyCharLit(Span),
-    /// Invalid format of a number literal.
-    InvalidNumLitFormat(Span),
-    /// Multiple characters inside a single character literal.
-    MultipleCharsInCharLit(Span),
-    /// Character appearing illegally, which cannot be lexed.
+    EmptyCharLit(Pos, Pos),
+    /// Invalid number literal format.
+    InvalidNumLitFormat(Pos, Pos),
+    /// Multiple characters in character literal.
+    MultipleCharsInCharLit(Pos, Pos),
+    /// Unexpected character.
     UnexpectedChar(Pos),
-    /// Unknown escape sequence in a character or string literal.
-    UnknownEscapeSeq(Span),
-    /// Character literal without closing quote.
-    /// The [`Pos`] indicates the starting position of the literal.
+    /// Unknown escape sequence, in character or string literal.
+    UnknownEscapeSeq(Pos, Pos),
+    /// Unterminated character literal,
+    /// character literal without a closing quote in the same line,
+    /// starting position indicated by the [`Pos`].
     UnterminatedCharLit(Pos),
-    /// String literal without closing quote.
-    /// The [`Pos`] indicates the starting position of the literal.
+    /// Unterminated string literal,
+    /// string literal without a closing quote in the same line,
+    /// starting position indicated by the [`Pos`].
     UnterminatedStrLit(Pos),
-
     // Parsing errors
 }
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Error::EmptyCharLit(span) =>
-                write!(f, "Lexing Error: Empty character literal at {span}"),
-            Error::InvalidNumLitFormat(span) =>
-                write!(f, "Lexing Error: Invalid number literal format at {span}"),
-            Error::MultipleCharsInCharLit(span) =>
-                write!(f, "Lexing Error: Multiple characters in character literal at {span}"),
-            Error::UnexpectedChar(pos) =>
-                write!(f, "Lexing Error: Unexpected character at {pos}"),
-            Error::UnknownEscapeSeq(span) =>
-                write!(f, "Lexing Error: Unknown escape sequence at {span}"),
-            Error::UnterminatedCharLit(pos) =>
-                write!(f, "Lexing Error: Unterminated character literal starting at {pos}"),
-            Error::UnterminatedStrLit(pos) =>
-                write!(f, "Lexing Error: Unterminated string literal starting at {pos}"),
+            Error::EmptyCharLit(start_pos, end_pos) => {
+                write!(
+                    f,
+                    "Lexing Error: Empty character literal at {}-{}",
+                    start_pos, end_pos
+                )
+            }
+            Error::InvalidNumLitFormat(start_pos, end_pos) => {
+                write!(
+                    f,
+                    "Lexing Error: Invalid number literal format at {}-{}",
+                    start_pos, end_pos
+                )
+            }
+            Error::MultipleCharsInCharLit(start_pos, end_pos) => write!(
+                f,
+                "Lexing Error: Multiple characters in character literal at {}-{}",
+                start_pos, end_pos
+            ),
+            Error::UnexpectedChar(pos) => write!(f, "Lexing Error: Unexpected character at {pos}"),
+            Error::UnknownEscapeSeq(start_pos, end_pos) => {
+                write!(
+                    f,
+                    "Lexing Error: Unknown escape sequence at {}-{}",
+                    start_pos, end_pos
+                )
+            }
+            Error::UnterminatedCharLit(pos) => write!(
+                f,
+                "Lexing Error: Unterminated character literal starting at {pos}"
+            ),
+            Error::UnterminatedStrLit(pos) => write!(
+                f,
+                "Lexing Error: Unterminated string literal starting at {pos}"
+            ),
         }
     }
 }
