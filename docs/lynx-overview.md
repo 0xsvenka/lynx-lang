@@ -78,7 +78,8 @@ ctor none : %~A -> Option A
 ### Pattern matching lambdas
 
 ```lynx
-| pattern => body
+| pattern1 => body1
+| pattern2 => body2
 ```
 
 - `=>` is visually distinct from `->`, which is reserved for function types.

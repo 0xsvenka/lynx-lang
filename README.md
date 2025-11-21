@@ -9,7 +9,7 @@ _Simplicity, generality, flexibility - and being intuitive._
 Lynx focuses on reasonable abstractions such as:
 
 - A delicate type system featuring first-class types, [parameter annotations](docs/lynx-overview.md#parameter-annotations), [contextual](docs/lynx-overview.md#contextual-parameters) & [implicit parameters](docs/lynx-overview.md#implicit-parameters)...
-- Lambda expressions with multi-branch pattern matching.
+- [Lambda expressions](docs/lynx-overview.md#pattern-matching-lambdas) with multi-branch pattern matching.
 - Customizable infix operators and metaprogramming capability.
 
 It encourges a functional style, and yet emphasizes freedom of expression over an enforced paradigm.
