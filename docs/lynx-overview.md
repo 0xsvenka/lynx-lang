@@ -2,7 +2,7 @@
 
 ## 1. Design Philosophy
 
-_Simplicity, generality, flexibility - and being intuitive._
+*Simplicity, generality, flexibility - and being intuitive.*
 
 ---
 
@@ -44,7 +44,7 @@ as long as the memory permits).
 - Records: `{ name = "Luke" }`, whose type is written as `{ name : Str }`.
 - Tuples: `(1, 1.0, 'a')` desugars to `pair 1 (pair 1.0 'a')`, whose type is `Int * Float * Char`, or more verbosely, `Pair Int (Pair Float Char)`.
 
-  _As you might have guessed, this approach, i.e. modeling tuples as composition of pairs, does not recognize singleton tuples. We do have, however, a `()` literal that desugars to `unit` of type `Unit`._
+  *As you might have guessed, this approach, i.e. modeling tuples as composition of pairs, does not recognize singleton tuples. We do have, however, a `()` literal that desugars to `unit` of type `Unit`.*
 
 ---
 
