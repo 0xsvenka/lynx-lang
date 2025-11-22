@@ -10,24 +10,20 @@
 
 ### Paragraph-based layout
 
-- Blank lines separate paragraphs.
+- The end of an expression is marked by `;` or a blank line.
 
-- Within a paragraph:
+- Line breaks and indentation are insignificant; the language deliberately avoids complicated offside rules.
 
-  - Line breaks and indentation are ignored.
-
-  - Expressions end with `;` or at paragraph end (implicit `;`).
-
-- Encourages one-expression-per-paragraph style, which is natural for functional constructs.
+This approach encourages (but does not enforce) a clean, one-expression-per-paragraph style, which is natural for functional programming constructs.
 
 Example:
 
 ```lynx
-factorial =
+fact =
   | 0 => 1
-  | n => n * factorial (n - 1);
-result = factorial 5
+  | n => n * fact (n - 1)
 
+result = fact 5;
 println result
 ```
 
@@ -45,22 +41,23 @@ println result
 
 - Strings
 
-  - Double-quoted strings: support escape sequences, e.g. `"Hello,\nWorld!"`; they cannot span multiple lines.
+  - Quoted strings: support escape sequences, e.g. `"Hello,\nWorld!"`; they cannot span multiple lines.
 
   - Raw strings: begin with `\\` and extend to the end of the line, with no escape processing, e.g. `\\Each line starts with "\\" ...`.
 
     - Adjacent raw strings are concatenated, with line breaks inserted between them; thus, one may write:
 
     ```lynx
-    \\This is a multi-line
-    \\string literal.
-    -- Comments do not break the multi-line string
-    \\    Add some indentation.
-      \\Where the line starts is irrelevant.
-    \\No escape sequence is processed here:
-    \\" ' \ \\ \n
-    \\You will get a trailing '\n' due to the next line...
-    \\
+    multiline_str =
+      \\This is a multi-line
+      \\string literal.
+      -- Comments do not break the multi-line string
+      \\    Add some indentation.
+    \\Where the line starts doesn't matter.
+      \\No escape sequence is processed here:
+      \\" ' \ \\ \n
+      \\You will get a trailing '\n' due to the next line...
+      \\
     ```
 
 - Lists: `[a, b, c]` desugars to `cons a (cons b (cons c nil))`.

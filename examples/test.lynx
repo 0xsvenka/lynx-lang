@@ -6,7 +6,7 @@ a = 2; b = a;
 c0_' = '\0'
 
 s = "bc\n\t\\\"";
-multi_line_str =
+multiline_str =
   \\This is a multi-line
   \\string literal.
   -- Comments do not break the multi-line string
@@ -17,7 +17,7 @@ multi_line_str =
   \\You will get a trailing '\n' due to the next line...
   \\
   ;
-println multi_line_str  -- A comment
+println multiline_str  -- A comment
 -- Another comment
 
 -- A comment in the middle
