@@ -1,16 +1,15 @@
 import std::math
 
+ctor Option : Type -> Type
+
 f = | i, j => i + j
 
-a = 2; b = a;
 c0_' = '\0';
-bad_ch_1 = '';
-bad_ch_2 = 'aba';
-bad_ch_3 = 'a
+--! bad_ch_1 = ''; bad_ch_2 = 'aba'; bad_ch_3 = 'a
 
-s = "bc\n\t\\\";
+--! s = "bc\n\t\\\";
 multiline_str =
-  \\This is a multi-line
+  "This is a multi-line"
   \\string literal.
   -- Comments do not break the multi-line string
   \\ \n \t
@@ -21,21 +20,15 @@ println multiline_str  -- A comment
 -- A comment in the middle
 
 -- Yet another comment
-rtol (1..100 by 3)
-  |> map (| x => x + 1)
-  |> filter math::is_prime
+std::list::from (1..100 by 3)
+  |> map (| x => x + 1) |> filter math::is_prime
   |> reduce (+)
   |> println
 
-bool_to_str =
-  | true => "true"
-  | false => "false"
-
-ii = 3;
-ss = ii |>
+ss = 3
   | 1 | 2 => "small"
   | _ => "big"
 
 ad +-- 1321;
 ad a-- 13d;
-1huqe
+1a

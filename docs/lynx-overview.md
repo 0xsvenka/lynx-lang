@@ -45,20 +45,20 @@ println result
 
   - Raw strings: begin with `\\` and extend to the end of the line, with no escape processing, e.g. `\\Each line starts with "\\" ...`.
 
-    - Adjacent raw strings are concatenated, with line breaks inserted between them; thus, one may write:
+  - Adjacent string literals are concatenated, with line breaks inserted between them; thus, one may write:
 
-    ```lynx
-    multiline_str =
-      \\This is a multi-line
-      \\string literal.
-      -- Comments do not break the multi-line string
-      \\    Add some indentation.
-    \\Where the line starts doesn't matter.
-      \\No escape sequence is processed here:
-      \\" ' \ \\ \n
-      \\You will get a trailing '\n' due to the next line...
-      \\
-    ```
+  ```lynx
+  multiline_str =
+    "This is a multi-line"
+    \\string literal.
+    -- Comments do not break the multi-line string
+    \\    Add some indentation.
+  \\Where the line starts doesn't matter.
+    \\No escape sequence is processed here:
+    \\" ' \ \\ \n
+    \\You will get a trailing '\n' due to the next line...
+    \\
+  ```
 
 - Lists: `[a, b, c]` desugars to `cons a (cons b (cons c nil))`.
 

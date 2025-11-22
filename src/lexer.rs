@@ -194,9 +194,9 @@ impl<'a> LineLexer<'a> {
         }
     }
 
-    /// Lexes quotedstring literals,
+    /// Lexes quoted string literals,
     /// invoked when the lookahead is `"`.
-    fn lex_str_lit(&mut self) -> Result<Token, Error> {
+    fn lex_quoted_str_lit(&mut self) -> Result<Token, Error> {
         self.advance(); // Skip opening quote
         let start_pos = self.pos();
         let mut s = String::new();
@@ -467,9 +467,10 @@ impl<'a> Iterator for LineLexer<'a> {
 
         match self.chars.peek() {
             None => {
+                // Already at line end
                 self.done = true;
-                // A blank line emits an ExprEnd
                 if self.is_blank {
+                    // A blank line emits an ExprEnd
                     Some(Ok(Token(ExprEnd, self.pos(), self.pos())))
                 } else {
                     None
@@ -489,7 +490,7 @@ impl<'a> Iterator for LineLexer<'a> {
                     '-' => self.lex_hyphen().map(|token| Ok(token)),
                     '\\' => Some(Ok(self.lex_backslash())),
                     '\'' => Some(self.lex_char_lit()),
-                    '"' => Some(self.lex_str_lit()),
+                    '"' => Some(self.lex_quoted_str_lit()),
                     c if c.is_ascii_digit() => Some(self.lex_num_lit(c)),
                     c if c.is_alphabetic() || c == '_' => Some(Ok(self.lex_alpha(c))),
                     c if self.sym_char_set.contains(&c) => Some(Ok(self.lex_sym(c))),
