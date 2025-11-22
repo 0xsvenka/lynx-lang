@@ -9,11 +9,12 @@ s = "bc\n\t\\\"";
 multi_line_str =
   \\This is a multi-line
   \\string literal.
+  -- Comments do not break the multi-line string
   \\    Add some indentation.
-    \\Where the line starts does not matter.
+    \\Where the line starts is irrelevant.
   \\No escape sequence is processed here:
   \\" ' \ \\ \n
-  \\You will get a trailing '\n' due to the next line
+  \\You will get a trailing '\n' due to the next line...
   \\
   ;
 println multi_line_str  -- A comment
@@ -37,8 +38,6 @@ ss = ii |>
   | 1 | 2 => "small"
   | _ => "big"
 
-ad -- 1321
--- 13d
+ad +-- 1321;
+ad a-- 13d;
 1huqe
-
-d

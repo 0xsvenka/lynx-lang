@@ -1,6 +1,6 @@
 # The Lynx Programming Language
 
-It's still in the early stage of development. Stay tuned.
+Note: Lynx is still in the early stage of development. Stay tuned :)
 
 ## Philosophy
 
