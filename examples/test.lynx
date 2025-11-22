@@ -3,19 +3,17 @@ import std::math
 f = | i, j => i + j
 
 a = 2; b = a;
-c0_' = '\0'
+c0_' = '\0';
+bad_ch_1 = '';
+bad_ch_2 = 'aba';
+bad_ch_3 = 'a
 
-s = "bc\n\t\\\"";
+s = "bc\n\t\\\";
 multiline_str =
   \\This is a multi-line
   \\string literal.
   -- Comments do not break the multi-line string
-  \\    Add some indentation.
-    \\Where the line starts is irrelevant.
-  \\No escape sequence is processed here:
-  \\" ' \ \\ \n
-  \\You will get a trailing '\n' due to the next line...
-  \\
+  \\ \n \t
   ;
 println multiline_str  -- A comment
 -- Another comment

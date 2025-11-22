@@ -28,6 +28,13 @@ struct LineLexer<'a> {
     /// Current column number (before the lookahead).
     col_no: usize,
 
+    /// Indicates whether the line is so far blank,
+    /// i.e. contains no character or only whitespace.
+    is_blank: bool,
+
+    /// Indicates whether the lexing process has completed.
+    done: bool,
+
     /// Table of Lynx's alphabetic keywords & corresponding [`TokenKind`]s,
     /// used for distinguishing keywords from identifiers.
     alpha_kw_table: HashMap<&'a str, TokenKind>,
@@ -48,6 +55,8 @@ impl<'a> LineLexer<'a> {
             chars: src.chars().peekable(),
             line_no,
             col_no: 0,
+            is_blank: true,
+            done: false,
 
             alpha_kw_table: HashMap::from([("ctor", Ctor), ("import", Import), ("_", Underscore)]),
             sym_kw_table: HashMap::from([
@@ -83,7 +92,7 @@ impl<'a> LineLexer<'a> {
         Pos(self.line_no, self.col_no)
     }
 
-    /// Skips whitespaces.
+    /// Skips whitespace.
     fn skip_ws(&mut self) {
         while let Some(&c) = self.chars.peek() {
             if !c.is_whitespace() {
@@ -185,7 +194,7 @@ impl<'a> LineLexer<'a> {
         }
     }
 
-    /// Lexes string literals,
+    /// Lexes quotedstring literals,
     /// invoked when the lookahead is `"`.
     fn lex_str_lit(&mut self) -> Result<Token, Error> {
         self.advance(); // Skip opening quote
@@ -450,29 +459,47 @@ impl<'a> Iterator for LineLexer<'a> {
     type Item = Result<Token, Error>;
 
     fn next(&mut self) -> Option<Self::Item> {
+        if self.done {
+            return None;
+        }
+
         self.skip_ws();
 
-        match self.chars.peek()? {
-            '(' => Some(Ok(self.lex_lp())),
-            ')' => Some(Ok(self.lex_rp())),
-            '[' => Some(Ok(self.lex_lb())),
-            ']' => Some(Ok(self.lex_rb())),
-            '{' => Some(Ok(self.lex_lc())),
-            '}' => Some(Ok(self.lex_rc())),
-            ',' => Some(Ok(self.lex_comma())),
-            ';' => Some(Ok(self.lex_semicolon())),
-            '-' => self.lex_hyphen().map(|token| Ok(token)),
-            '\\' => Some(Ok(self.lex_backslash())),
-            '\'' => Some(self.lex_char_lit()),
-            '"' => Some(self.lex_str_lit()),
-            &c if c.is_ascii_digit() => Some(self.lex_num_lit(c)),
-            &c if c.is_alphabetic() || c == '_' => Some(Ok(self.lex_alpha(c))),
-            &c if self.sym_char_set.contains(&c) => Some(Ok(self.lex_sym(c))),
+        match self.chars.peek() {
+            None => {
+                self.done = true;
+                // A blank line emits an ExprEnd
+                if self.is_blank {
+                    Some(Ok(Token(ExprEnd, self.pos(), self.pos())))
+                } else {
+                    None
+                }
+            }
+            Some(&c) => {
+                self.is_blank = false;
+                match c {
+                    '(' => Some(Ok(self.lex_lp())),
+                    ')' => Some(Ok(self.lex_rp())),
+                    '[' => Some(Ok(self.lex_lb())),
+                    ']' => Some(Ok(self.lex_rb())),
+                    '{' => Some(Ok(self.lex_lc())),
+                    '}' => Some(Ok(self.lex_rc())),
+                    ',' => Some(Ok(self.lex_comma())),
+                    ';' => Some(Ok(self.lex_semicolon())),
+                    '-' => self.lex_hyphen().map(|token| Ok(token)),
+                    '\\' => Some(Ok(self.lex_backslash())),
+                    '\'' => Some(self.lex_char_lit()),
+                    '"' => Some(self.lex_str_lit()),
+                    c if c.is_ascii_digit() => Some(self.lex_num_lit(c)),
+                    c if c.is_alphabetic() || c == '_' => Some(Ok(self.lex_alpha(c))),
+                    c if self.sym_char_set.contains(&c) => Some(Ok(self.lex_sym(c))),
 
-            // The lookahead cannot be lexed
-            _ => {
-                self.advance();
-                Some(Err(Error::UnexpectedChar(self.pos())))
+                    // The lookahead cannot be lexed
+                    _ => {
+                        self.advance();
+                        Some(Err(Error::UnexpectedChar(self.pos())))
+                    }
+                }
             }
         }
     }
@@ -509,14 +536,12 @@ impl<'a> Iterator for Lexer<'a> {
                 // Current line exhausted, fall through to load next line
             }
 
-            // Try to get the next line
             match self.lines.next() {
                 Some((line_idx, line_str)) => {
                     let line_no = line_idx + 1;
                     self.current_line_lexer = Some(LineLexer::new(line_str, line_no));
                 }
                 None => {
-                    // No more lines.
                     self.current_line_lexer = None;
                     return None;
                 }
