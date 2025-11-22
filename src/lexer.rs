@@ -1,6 +1,6 @@
 use std::{
     collections::{HashMap, HashSet},
-    iter::Peekable,
+    iter::{Enumerate, Peekable},
     str::{Chars, Lines},
 };
 
@@ -12,7 +12,12 @@ use crate::{
     },
 };
 
-/// Lexer that handles a single line of Lynx source code.
+/// Lexer for a single line of Lynx source code.
+///
+/// This type is an internal helper used by the top-level [`Lexer`] and is *not*
+/// intended for public use. Since Lynx tokens never span multiple lines,
+/// the overall lexing task can be decomposed into independent per-line passes,
+/// each handled by a [`LineLexer`], which simplifies the lexing logic.
 struct LineLexer<'a> {
     /// Peekable iterator over the line.
     chars: Peekable<Chars<'a>>,
@@ -36,7 +41,7 @@ struct LineLexer<'a> {
 }
 
 impl<'a> LineLexer<'a> {
-    /// Creates a [`LineLexer`] from a single line of Lynx source code
+    /// Creates a [`LineLexer`] from a single line of source code
     /// and the line number.
     fn new(src: &'a str, line_no: usize) -> Self {
         Self {
@@ -422,7 +427,7 @@ impl<'a> LineLexer<'a> {
                 self.skip_line_comment();
                 None
             }
-            // Otherwise, the beginning of a symbolic identifier
+            // Otherwise: the beginning of a symbolic identifier
             _ => Some(self.lex_sym('-')),
         }
     }
@@ -435,13 +440,12 @@ impl<'a> LineLexer<'a> {
         match temp_iter.peek() {
             // `\\`: raw string literal
             Some('\\') => self.lex_raw_string_lit(),
-            // Otherwise, the beginning of a symbolic identifier
+            // Otherwise: the beginning of a symbolic identifier
             _ => self.lex_sym('\\'),
         }
     }
 }
 
-/// [`LineLexer`] serves as an iterator emitting [`Result<Token, Error>`]s.
 impl<'a> Iterator for LineLexer<'a> {
     type Item = Result<Token, Error>;
 
@@ -474,16 +478,21 @@ impl<'a> Iterator for LineLexer<'a> {
     }
 }
 
+/// Top-level lexer for Lynx source code.
 pub struct Lexer<'a> {
-    lines: Lines<'a>,
-    current_line_lexer: LineLexer<'a>,
+    /// Indexed iterator over lines of the source code.
+    lines: Enumerate<Lines<'a>>,
+    /// Current [`LineLexer`], if any.
+    current_line_lexer: Option<LineLexer<'a>>,
 }
 
 impl<'a> Lexer<'a> {
+    /// Creates a [`Lexer`] from the source code.
     pub fn new(src: &'a str) -> Self {
-        let mut lines = src.lines();
-        let current_line_lexer = lines.next();
-        todo!()
+        Self {
+            lines: src.lines().enumerate(),
+            current_line_lexer: None,
+        }
     }
 }
 
@@ -491,6 +500,27 @@ impl<'a> Iterator for Lexer<'a> {
     type Item = Result<Token, Error>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        todo!()
+        loop {
+            // If we have a current line, try to get the next token from it
+            if let Some(ref mut lexer) = self.current_line_lexer {
+                if let Some(token) = lexer.next() {
+                    return Some(token);
+                }
+                // Current line exhausted, fall through to load next line
+            }
+
+            // Try to get the next line
+            match self.lines.next() {
+                Some((line_idx, line_str)) => {
+                    let line_no = line_idx + 1;
+                    self.current_line_lexer = Some(LineLexer::new(line_str, line_no));
+                }
+                None => {
+                    // No more lines.
+                    self.current_line_lexer = None;
+                    return None;
+                }
+            }
+        }
     }
 }

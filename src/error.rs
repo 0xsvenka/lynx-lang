@@ -18,11 +18,11 @@ pub enum Error {
     /// Unknown escape sequence, in character or string literal.
     UnknownEscapeSeq(Pos, Pos),
     /// Unterminated character literal,
-    /// character literal without a closing quote in the same line,
+    /// i.e. character literal missing a closing quote in the same line,
     /// starting position indicated by the [`Pos`].
     UnterminatedCharLit(Pos),
     /// Unterminated string literal,
-    /// string literal without a closing quote in the same line,
+    /// i.e. string literal missing a closing quote in the same line,
     /// starting position indicated by the [`Pos`].
     UnterminatedStrLit(Pos),
     // Parsing errors
