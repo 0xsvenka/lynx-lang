@@ -111,12 +111,12 @@ ctor none : %~A -> Option A
 
 - Patterns: atoms, literals, constructors, wildcards (`_`), alternation (`| 1 | 2 => ...`).
 
-- Syntactic sugar for multi-parameter functions: `| a, b => ...` desugars to curried function `| a => | b => ...`, which helps with complex patterns, e.g. `| _, [x], y+:ys => ...`.
+- Syntactic sugar for multi-parameter functions: `| a b => ...` desugars to curried function `| a => | b => ...`, which helps with complex patterns, e.g. `| _ [x] (y+:ys) => ...`.
 
 - Used as the primary way of defining functions:
 
   ```lynx
-  add = | a, b => a + b
+  add = | a b => a + b
   ```
 
 - Supports case matching naturally via the pipeline operator `|>`, eliminating the need for an additional "match expression".
@@ -155,7 +155,7 @@ ctor none : %~A -> Option A
 
 ```lynx
 make_list : (Type ~ A) -> A -> List A =
-  | _, a => [a];
+  | _ a => [a];
 l = make_list Int 5
 ```
 
