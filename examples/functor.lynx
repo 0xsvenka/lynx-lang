@@ -30,7 +30,7 @@ applicative_monad :
   | #m =>
   {
     pure = m.return,
-    (<*>) = | mf, ma =>
+    (<*>) = | mf ma =>
       mf m.>>= | f =>
       ma m.>>= | a =>
       m.return (f a)

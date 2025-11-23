@@ -2,9 +2,10 @@ import std::math
 
 ctor Option : Type -> Type
 
-f = | i, j => i + j
+f = | i j => i + j
 
 c0_' = '\0';
+-- Here I use `!` after `--` to comment out erroneous code
 --! bad_ch_1 = ''; bad_ch_2 = 'aba'; bad_ch_3 = 'a
 
 --! s = "bc\n\t\\\";
@@ -15,20 +16,18 @@ multiline_str =
   \\ \n \t
   ;
 println multiline_str  -- A comment
--- Another comment
 
 -- A comment in the middle
 
--- Yet another comment
 std::list::from (1..100 by 3)
   |> map (| x => x + 1) |> filter math::is_prime
   |> reduce (+)
   |> println
 
-ss = 3
+_ = 3 |>
   | 1 | 2 => "small"
   | _ => "big"
 
-ad +-- 1321;
+ad +-- 1321;  -- `--` in `+--` does NOT begin a comment
 ad a-- 13d;
 1a

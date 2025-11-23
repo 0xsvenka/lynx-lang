@@ -1,5 +1,5 @@
 Multiply : Type -> Type -> Type' =
-  | A, B =>
+  | A B =>
   {
     R : Type,
     mul : A -> B -> R
@@ -15,7 +15,7 @@ composition : %~A -> %~B -> %~C
     -> Multiply (B -> C) (A -> B) =
   {
     R = A -> C,
-    mul = | f, g, x => f (g x)
+    mul = | f g x => f (g x)
   }
 
 (*) : %~A -> %~B -> #((Multiply A B)~m)
@@ -47,7 +47,7 @@ eq_default :
     %~A -> (A -> A -> Bool) -> (A -> A -> Bool) =
   | eq =>
   {
-    (!=) = | x, y => not (eq x y)
+    (!=) = | x y => not (eq x y)
   }
 
 eq_int : Eq Int =
@@ -56,13 +56,13 @@ eq_int : Eq Int =
     (eq_default (==))...
   }
 
-data Complex : Type -> Type
-  | complex : A -> A -> Complex A
+ctor Complex : Type -> Type;
+ctor complex : %~A -> A -> A -> Complex A
 
 eq_complex : %~A -> #(Eq A) -> Eq (Complex A) =
   | #e =>
   {
-    (==) = | complex a1 b1, complex a2 b2 =>
+    (==) = | (complex a1 b1) (complex a2 b2) =>
         a1 e.== a2 && b1 e.== b2,
     (eq_default (==))...
   }

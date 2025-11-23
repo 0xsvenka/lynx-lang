@@ -5,94 +5,94 @@ ctor cons : %~A -> A -> List A -> List A
 ctor (+:) = cons
 
 (++) : %~A -> List A -> List A -> List A =
-  | [], ys => ys
-  | x+:xs, ys => x +: (xs++ys)
+  | [] ys => ys
+  | (x+:xs) ys => x +: (xs++ys)
 
 head! : %~A -> List A -> A =
   | [] => error! "empty list"
-  | x+:_ => x
+  | (x+:_) => x
 
 tail! : %~A -> List A -> List A =
   | [] => error! "empty list"
-  | _+:xs => xs
+  | (_+:xs) => xs
 
 init! : %~A -> List A -> List A =
   | [] => error! "empty list"
   | [_] => []
-  | x+:xs => x +: init! xs
+  | (x+:xs) => x +: init! xs
 
 last! : %~A -> List A -> A =
   | [] => error! "empty list"
   | [x] => x
-  | _+:xs => last! xs
+  | (_+:xs) => last! xs
 
 shead : %~A -> List A -> Option A =
   | [] => none
-  | x+:_ => some x
+  | (x+:_) => some x
 
 stail : %~A -> List A -> Option (List A) =
   | [] => none
-  | _+:xs => some xs
+  | (_+:xs) => some xs
 
 sinit : %~A -> List A -> Option (List A) =
   | [] => none
-  | x+:xs => sinit xs |>
-    | some ys => some (x+:ys)
+  | (x+:xs) => sinit xs |>
+    | (some ys) => some (x+:ys)
     | none => some []
 
 slast : %~A -> List A -> Option A =
   | [] => none
   | [x] => some x
-  | _+:xs => slast xs
+  | (_+:xs) => slast xs
 
 len : %~A -> List A -> Nat =
   | [] => 0
-  | _+:xs => 1 + len xs
+  | (_+:xs) => 1 + len xs
 
 has_elem : %~A -> #(Eq A) -> A -> List A -> Bool =
-  | _, [] => false
-  | e, e'+:xs =>
-    if e == e' then true
-    else has_elem e xs
+  | _ [] => false
+  | x (x'+:xs) =>
+    if x == x' then true
+    else has_elem x xs
 
 zip : %~A -> %~B -> List A -> List B -> List (A*B) =
-  | [], _ | _, [] => []
-  | x+:xs, y+:ys => (x, y) +: zip xs ys
+  | [] _ | _ [] => []
+  | (x+:xs) (y+:ys) => (x, y) +: zip xs ys
 
 zip_with : %~A -> %~B -> %~C
     -> (A -> B -> C) -> List A -> List B -> List C =
-  | _, [], _ => []
-  | _, _, [] => []
-  | f, x+:xs, y+:ys => f x y +: zip_with f xs ys
+  | _ [] _ => []
+  | _ _ [] => []
+  | f (x+:xs) (y+:ys) => f x y +: zip_with f xs ys
 
 foldl : %~A -> %~B -> (B -> A -> B) -> B -> List A -> B =
-  | _, z, [] => z
-  | f, z, x+:xs => foldl f (f z x) xs
+  | _ z [] => z
+  | f z (x+:xs) => foldl f (f z x) xs
 
 foldr : %~A -> %~B -> (A -> B -> B) -> B -> List A -> B =
-  | _, z, [] => z
-  | f, z, x+:xs => f x (foldr f z xs)
+  | _ z [] => z
+  | f z (x+:xs) => f x (foldr f z xs)
 
 scanl : %~A -> %~B -> (B -> A -> B) -> B -> List A ->  =
-  | _, z, [] => [z]
-  | f, z, x+:xs => z +: scanl f (f z x) xs
+  | _ z [] => [z]
+  | f z (x+:xs) => z +: scanl f (f z x) xs
 
 scanr : %~A -> %~B -> (A -> B -> B) -> B -> List A -> List B =
-  | _, z, [] => [z]
-  | f, z, x+:xs => (
+  | _ z [] => [z]
+  | f z (x+:xs) => (
       ys = scanr f z xs;
       f x (head! ys) +: ys
     )
 
 map : %~A -> %~B -> (A -> B) -> List A -> List B =
-  | _, [] => []
-  | f, x+:xs => f x +: map f xs
+  | _ [] => []
+  | f (x+:xs) => f x +: map f xs
 
 flat_map : %~A -> %~B -> (A -> List B) -> List A -> List B =
   | f => foldr ((++) * f) []
 
 filter : %~A -> (A -> Bool) -> List A -> List A =
-  | _, [] => []
-  | p, x+:xs =>
+  | _ [] => []
+  | p (x+:xs) =>
     if p x then x +: filter p xs
     else filter p xs
