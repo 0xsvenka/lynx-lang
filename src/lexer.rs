@@ -7,7 +7,7 @@ use std::{
 use crate::{
     error::Error,
     token::{
-        Pos, Token,
+        Pos, Span, Token,
         TokenKind::{self, *},
     },
 };
@@ -82,12 +82,14 @@ impl<'a> LineLexer<'a> {
 
     /// Updates the state of the lexer
     /// when advancing to the next character.
+    #[inline]
     fn advance(&mut self) {
         self.col_no += 1;
         self.chars.next();
     }
 
     /// Returns current position.
+    /// #[inline]
     fn pos(&self) -> Pos {
         Pos(self.line_no, self.col_no)
     }
@@ -124,13 +126,13 @@ impl<'a> LineLexer<'a> {
                     self.advance();
                     match ch_vec.len() {
                         0 => {
-                            return Err(Error::EmptyCharLit(start_pos, self.pos()));
+                            return Err(Error::EmptyCharLit(Span(start_pos, self.pos())));
                         }
                         1 => {
-                            return Ok(Token(CharLit(ch_vec[0]), start_pos, self.pos()));
+                            return Ok(Token(CharLit(ch_vec[0]), Span(start_pos, self.pos())));
                         }
                         _ => {
-                            return Err(Error::MultipleCharsInCharLit(start_pos, self.pos()));
+                            return Err(Error::MultipleCharsInCharLit(Span(start_pos, self.pos())));
                         }
                     }
                 }
@@ -172,10 +174,10 @@ impl<'a> LineLexer<'a> {
                         // TODO: Support \u escape sequences
                         Some(_) => {
                             self.advance();
-                            return Err(Error::UnknownEscapeSeq(esc_start_pos, self.pos()));
+                            return Err(Error::UnknownEscapeSeq(Span(esc_start_pos, self.pos())));
                         }
                         None => {
-                            return Err(Error::UnterminatedCharLit(start_pos));
+                            return Err(Error::UnterminatedCharLit(Span(start_pos, self.pos())));
                         }
                     };
 
@@ -188,7 +190,7 @@ impl<'a> LineLexer<'a> {
                 }
 
                 None => {
-                    return Err(Error::UnterminatedCharLit(start_pos));
+                    return Err(Error::UnterminatedCharLit(Span(start_pos, self.pos())));
                 }
             }
         }
@@ -206,7 +208,7 @@ impl<'a> LineLexer<'a> {
                 Some('"') => {
                     // Closing quote
                     self.advance();
-                    return Ok(Token(StrLit(s), start_pos, self.pos()));
+                    return Ok(Token(StrLit(s), Span(start_pos, self.pos())));
                 }
 
                 Some('\\') => {
@@ -246,10 +248,10 @@ impl<'a> LineLexer<'a> {
                         // TODO: Support \u escape sequences
                         Some(_) => {
                             self.advance();
-                            return Err(Error::UnknownEscapeSeq(esc_start_pos, self.pos()));
+                            return Err(Error::UnknownEscapeSeq(Span(esc_start_pos, self.pos())));
                         }
                         None => {
-                            return Err(Error::UnterminatedStrLit(start_pos));
+                            return Err(Error::UnterminatedStrLit(Span(start_pos, self.pos())));
                         }
                     };
 
@@ -262,7 +264,7 @@ impl<'a> LineLexer<'a> {
                 }
 
                 None => {
-                    return Err(Error::UnterminatedStrLit(start_pos));
+                    return Err(Error::UnterminatedStrLit(Span(start_pos, self.pos())));
                 }
             }
         }
@@ -282,7 +284,7 @@ impl<'a> LineLexer<'a> {
             self.advance();
         }
 
-        Token(StrLit(s), start_pos, self.pos())
+        Token(StrLit(s), Span(start_pos, self.pos()))
     }
 
     // TODO: Support more number formats, like base prefixes and underscores
@@ -317,15 +319,15 @@ impl<'a> LineLexer<'a> {
 
         if is_float {
             if let Ok(num) = num_str.parse::<f64>() {
-                Ok(Token(FloatLit(num), start_pos, self.pos()))
+                Ok(Token(FloatLit(num), Span(start_pos, self.pos())))
             } else {
-                Err(Error::InvalidNumLitFormat(start_pos, self.pos()))
+                Err(Error::InvalidNumLitFormat(Span(start_pos, self.pos())))
             }
         } else {
             if let Ok(num) = num_str.parse::<i64>() {
-                Ok(Token(IntLit(num), start_pos, self.pos()))
+                Ok(Token(IntLit(num), Span(start_pos, self.pos())))
             } else {
-                Err(Error::InvalidNumLitFormat(start_pos, self.pos()))
+                Err(Error::InvalidNumLitFormat(Span(start_pos, self.pos())))
             }
         }
     }
@@ -347,8 +349,8 @@ impl<'a> LineLexer<'a> {
         }
 
         match self.alpha_kw_table.get(name.as_str()) {
-            Some(kw_token_kind) => Token(kw_token_kind.to_owned(), start_pos, self.pos()),
-            None => Token(Id(name), start_pos, self.pos()),
+            Some(kw_token_kind) => Token(kw_token_kind.to_owned(), Span(start_pos, self.pos())),
+            None => Token(Id(name), Span(start_pos, self.pos())),
         }
     }
 
@@ -372,57 +374,57 @@ impl<'a> LineLexer<'a> {
         }
 
         match self.sym_kw_table.get(name.as_str()) {
-            Some(kw_token_kind) => Token(kw_token_kind.to_owned(), start_pos, self.pos()),
-            None => Token(Id(name), start_pos, self.pos()),
+            Some(kw_token_kind) => Token(kw_token_kind.to_owned(), Span(start_pos, self.pos())),
+            None => Token(Id(name), Span(start_pos, self.pos())),
         }
     }
 
     /// Handles lookahead `(`.
     fn lex_lp(&mut self) -> Token {
         self.advance();
-        Token(Lp, self.pos(), self.pos())
+        Token(Lp, Span(self.pos(), self.pos()))
     }
 
     /// Handles lookahead `)`.
     fn lex_rp(&mut self) -> Token {
         self.advance();
-        Token(Rp, self.pos(), self.pos())
+        Token(Rp, Span(self.pos(), self.pos()))
     }
 
     /// Handles lookahead `[`.
     fn lex_lb(&mut self) -> Token {
         self.advance();
-        Token(Lb, self.pos(), self.pos())
+        Token(Lb, Span(self.pos(), self.pos()))
     }
 
     /// Handles lookahead `]`.
     fn lex_rb(&mut self) -> Token {
         self.advance();
-        Token(Rb, self.pos(), self.pos())
+        Token(Rb, Span(self.pos(), self.pos()))
     }
 
     /// Handles lookahead `{`.
     fn lex_lc(&mut self) -> Token {
         self.advance();
-        Token(Lc, self.pos(), self.pos())
+        Token(Lc, Span(self.pos(), self.pos()))
     }
 
     /// Handles lookahead `}`.
     fn lex_rc(&mut self) -> Token {
         self.advance();
-        Token(Rc, self.pos(), self.pos())
+        Token(Rc, Span(self.pos(), self.pos()))
     }
 
     /// Handles lookahead `,`.
     fn lex_comma(&mut self) -> Token {
         self.advance();
-        Token(Comma, self.pos(), self.pos())
+        Token(Comma, Span(self.pos(), self.pos()))
     }
 
     /// Handles lookahead `;`.
     fn lex_semicolon(&mut self) -> Token {
         self.advance();
-        Token(ExprEnd, self.pos(), self.pos())
+        Token(ExprEnd, Span(self.pos(), self.pos()))
     }
 
     /// Handles lookahead `-`.
@@ -471,7 +473,7 @@ impl<'a> Iterator for LineLexer<'a> {
                 self.done = true;
                 if self.is_blank {
                     // A blank line emits an ExprEnd
-                    Some(Ok(Token(ExprEnd, self.pos(), self.pos())))
+                    Some(Ok(Token(ExprEnd, Span(self.pos(), self.pos()))))
                 } else {
                     None
                 }
@@ -498,7 +500,7 @@ impl<'a> Iterator for LineLexer<'a> {
                     // The lookahead cannot be lexed
                     _ => {
                         self.advance();
-                        Some(Err(Error::UnexpectedChar(self.pos())))
+                        Some(Err(Error::UnexpectedChar(Span(self.pos(), self.pos()))))
                     }
                 }
             }

@@ -1,6 +1,6 @@
 use std::{error, fmt};
 
-use crate::token::Pos;
+use crate::token::Span;
 
 /// Errors that may occur during the compiling process,
 /// including lexing errors, parsing errors, etc.
@@ -8,63 +8,53 @@ use crate::token::Pos;
 pub enum Error {
     // Lexing errors
     /// Empty character literal.
-    EmptyCharLit(Pos, Pos),
+    EmptyCharLit(Span),
     /// Invalid number literal format.
-    InvalidNumLitFormat(Pos, Pos),
+    InvalidNumLitFormat(Span),
     /// Multiple characters in character literal.
-    MultipleCharsInCharLit(Pos, Pos),
+    MultipleCharsInCharLit(Span),
     /// Unexpected character.
-    UnexpectedChar(Pos),
+    UnexpectedChar(Span),
     /// Unknown escape sequence, in character or string literal.
-    UnknownEscapeSeq(Pos, Pos),
+    UnknownEscapeSeq(Span),
     /// Unterminated character literal,
-    /// i.e. character literal missing a closing quote in the same line,
-    /// starting position indicated by the [`Pos`].
-    UnterminatedCharLit(Pos),
+    /// character literal missing a closing quote in the same line.
+    UnterminatedCharLit(Span),
     /// Unterminated string literal,
-    /// i.e. string literal missing a closing quote in the same line,
-    /// starting position indicated by the [`Pos`].
-    UnterminatedStrLit(Pos),
+    /// string literal missing a closing quote in the same line.
+    UnterminatedStrLit(Span),
     // Parsing errors
 }
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Error::EmptyCharLit(start_pos, end_pos) => {
-                write!(
-                    f,
-                    "Lexing Error: Empty character literal at {}-{}",
-                    start_pos, end_pos
-                )
+            Error::EmptyCharLit(span) => {
+                write!(f, "Lexing Error: Empty character literal at {}", span)
             }
-            Error::InvalidNumLitFormat(start_pos, end_pos) => {
-                write!(
-                    f,
-                    "Lexing Error: Invalid number literal format at {}-{}",
-                    start_pos, end_pos
-                )
+            Error::InvalidNumLitFormat(span) => {
+                write!(f, "Lexing Error: Invalid number literal format at {}", span)
             }
-            Error::MultipleCharsInCharLit(start_pos, end_pos) => write!(
+            Error::MultipleCharsInCharLit(span) => write!(
                 f,
-                "Lexing Error: Multiple characters in character literal at {}-{}",
-                start_pos, end_pos
+                "Lexing Error: Multiple characters in character literal at {}",
+                span
             ),
-            Error::UnexpectedChar(pos) => write!(f, "Lexing Error: Unexpected character at {pos}"),
-            Error::UnknownEscapeSeq(start_pos, end_pos) => {
-                write!(
-                    f,
-                    "Lexing Error: Unknown escape sequence at {}-{}",
-                    start_pos, end_pos
-                )
+            Error::UnexpectedChar(span) => {
+                write!(f, "Lexing Error: Unexpected character at {}", span)
             }
-            Error::UnterminatedCharLit(pos) => write!(
+            Error::UnknownEscapeSeq(span) => {
+                write!(f, "Lexing Error: Unknown escape sequence at {}", span)
+            }
+            Error::UnterminatedCharLit(span) => write!(
                 f,
-                "Lexing Error: Unterminated character literal starting at {pos}"
+                "Lexing Error: Unterminated character literal starting at {}",
+                span
             ),
-            Error::UnterminatedStrLit(pos) => write!(
+            Error::UnterminatedStrLit(span) => write!(
                 f,
-                "Lexing Error: Unterminated string literal starting at {pos}"
+                "Lexing Error: Unterminated string literal starting at {}",
+                span
             ),
         }
     }

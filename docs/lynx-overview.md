@@ -33,7 +33,7 @@ println result
 
 ### Literals
 
-- Integers: `0b1001`, `-21534789639034149038653713981928045` (arbitrary size as long as the memory permits).
+- Integers: `0b1001`, `-2147483647` (arbitrary size as long as the memory permits).
 
 - Floating-point numbers: `3.14`, `6.626e-34` (arbitrary precision as long as the memory permits).
 

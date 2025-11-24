@@ -1,17 +1,39 @@
 use std::fmt;
 
-/// A character's position in Lynx source code.
+/// Position of a character in Lynx source code.
 #[derive(Debug, Clone, Copy)]
 pub struct Pos(
     /// Line number, starting from `1`.
     pub usize,
     /// Column number, starting from `1`.
+    /// 
+    /// However, note that for a blank line [`Token`]
+    /// (whose [`TokenKind`] is [`ExprEnd`](TokenKind::ExprEnd)),
+    /// this field denotes the last column of the line, e.g. `3`
+    /// if the line contains only three whitespace characters and
+    /// nothing else; therefore, this field is `0` if and only if
+    /// the line contains no character at all.
     pub usize,
 );
 
 impl fmt::Display for Pos {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}:{}", self.0, self.1)
+    }
+}
+
+/// Position of a span of text in Lynx source code.
+#[derive(Debug)]
+pub struct Span(
+    /// Starting position.
+    pub Pos,
+    /// End position (inclusive).
+    pub Pos,
+);
+
+impl fmt::Display for Span {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}-{}", self.0, self.1)
     }
 }
 
@@ -89,31 +111,29 @@ pub enum TokenKind {
     PercentTilde,
 
     // Separators
-    /// Keyword `(` (left parenthesis).
+    /// `(` (left parenthesis).
     Lp,
-    /// Keyword `)` (right parenthesis).
+    /// `)` (right parenthesis).
     Rp,
-    /// Keyword `[` (left bracket).
+    /// `[` (left bracket).
     Lb,
-    /// Keyword `]` (right bracket).
+    /// `]` (right bracket).
     Rb,
-    /// Keyword `{` (left curly brace).
+    /// `{` (left curly brace).
     Lc,
-    /// Keyword `}` (right curly brace).
+    /// `}` (right curly brace).
     Rc,
-    /// Keyword `,`.
+    /// `,`.
     Comma,
     /// End of expression, i.e. `;` or blank line.
     ExprEnd,
 }
 
-/// A token of Lynx source code.
-#[derive(Debug, Clone)]
+/// Token of Lynx source code.
+#[derive(Debug)]
 pub struct Token(
     /// Kind of the token.
     pub TokenKind,
-    /// Starting position of the token.
-    pub Pos,
-    /// End position of the token (inclusive).
-    pub Pos,
+    /// Position in the source code.
+    pub Span,
 );
