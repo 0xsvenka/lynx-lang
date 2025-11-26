@@ -6,7 +6,7 @@ pub struct Pos(
     /// Line number, starting from `1`.
     pub usize,
     /// Column number, starting from `1`.
-    /// 
+    ///
     /// However, note that for a blank line [`Token`]
     /// (whose [`TokenKind`] is [`ExprEnd`](TokenKind::ExprEnd)),
     /// this field denotes the last column of the line, e.g. `3`
@@ -17,7 +17,7 @@ pub struct Pos(
 );
 
 impl fmt::Display for Pos {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}:{}", self.0, self.1)
     }
 }
@@ -32,7 +32,7 @@ pub struct Span(
 );
 
 impl fmt::Display for Span {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}-{}", self.0, self.1)
     }
 }
@@ -40,13 +40,13 @@ impl fmt::Display for Span {
 /// Various kinds of tokens.
 #[derive(Debug, Clone)]
 pub enum TokenKind {
-    /// Identifiers.
+    /// Identifier.
     Id(
         /// Name of the identifier.
         String,
     ),
 
-    /// Infix operators.
+    /// Infix operator.
     Op(
         /// Name of the operator.
         String,
@@ -137,3 +137,9 @@ pub struct Token(
     /// Position in the source code.
     pub Span,
 );
+
+impl fmt::Display for Token {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Token({:?}, {})", self.0, self.1)
+    }
+}

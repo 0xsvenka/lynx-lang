@@ -6,9 +6,9 @@ f = | i j => i + j
 
 c0_' = '\0';
 -- Here I use `!` after `--` to comment out erroneous code
---! bad_ch_1 = ''; bad_ch_2 = 'aba'; bad_ch_3 = 'a
+bad_ch_1 = ''; bad_ch_2 = 'aba'; bad_ch_3 = 'a
 
---! s = "bc\n\t\\\";
+s = "bc\n\t\\\";
 multiline_str =
   "This is a multi-line"
   \\string literal.

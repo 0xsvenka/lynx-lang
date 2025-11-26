@@ -27,7 +27,7 @@ pub enum Error {
 }
 
 impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Error::EmptyCharLit(span) => {
                 write!(f, "Lexing Error: Empty character literal at {}", span)
@@ -48,12 +48,12 @@ impl fmt::Display for Error {
             }
             Error::UnterminatedCharLit(span) => write!(
                 f,
-                "Lexing Error: Unterminated character literal starting at {}",
+                "Lexing Error: Unterminated character literal at {}",
                 span
             ),
             Error::UnterminatedStrLit(span) => write!(
                 f,
-                "Lexing Error: Unterminated string literal starting at {}",
+                "Lexing Error: Unterminated string literal at {}",
                 span
             ),
         }
