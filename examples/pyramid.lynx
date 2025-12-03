@@ -1,26 +1,26 @@
 -- A tiny parser combinator library for Lynx
 
-Parser : Type -> Type =
+Parser: Type -> Type =
   | A => Str -> List (A * Str)
 
-result : %~A -> A -> Parser A =
+result: %~A -> A -> Parser A =
   | a input => [(a, input)]
 
-zero : %~A -> Parser A =
+zero: %~A -> Parser A =
   | _ => []
 
-item : Parser Char =
+item: Parser Char =
   | [] => []
   | (x+:xs) => [(x, xs)]
 
-monad_parser : Monad Parser =
+monad_parser: Monad Parser =
   {
     return = result,
     (>>=) =
       | pa f =>
       | input =>
         pa input |>
-        flat_map (| (a, input') =>
-          f a input'
-        )
+          flat_map (| (a, input') =>
+            f a input'
+          )
   }

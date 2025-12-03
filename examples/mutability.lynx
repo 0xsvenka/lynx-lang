@@ -1,0 +1,24 @@
+mut va = 1;  -- Mutable binding
+a = va;
+va := 2;
+println a  -- 1
+
+ra: Ref Int = ref 1;  -- Mutable reference
+mut rb = ra;
+rb := ref 2;
+println ra>>;  -- 1
+rc = ra;
+rc << 3;
+println ra>>  -- 3
+
+Stash = | a =>
+  {
+    content: Ref a
+  }
+
+f: %~a -> Stash a -> Ref a =
+  | {content} => content
+
+stash = {content = ref 0};
+f stash << 1;
+assert_eq stash.content>> 1

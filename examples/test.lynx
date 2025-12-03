@@ -1,6 +1,6 @@
 import std::math
 
-ctor Option : Type -> Type
+ctor Option: Type -> Type
 
 f = | i j => i + j
 
@@ -10,8 +10,7 @@ bad_ch_1 = ''; bad_ch_2 = 'aba'; bad_ch_3 = 'a
 
 s = "bc\n\t\\\";
 multiline_str =
-  "This is a multi-line"
-  \\string literal.
+  "This is a multi-line" \\string literal.
   -- Comments do not break the multi-line string
   \\ \n \t
   ;
