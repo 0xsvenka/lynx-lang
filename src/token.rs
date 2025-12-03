@@ -33,7 +33,7 @@ pub struct Span(
 
 impl fmt::Display for Span {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}-{}", self.0, self.1)
+        write!(f, "[{}, {}]", self.0, self.1)
     }
 }
 
@@ -140,6 +140,6 @@ pub struct Token(
 
 impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Token({:?}, {})", self.0, self.1)
+        write!(f, "{:?}@{}", self.0, self.1)
     }
 }
