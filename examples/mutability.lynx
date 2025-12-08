@@ -1,6 +1,6 @@
-mut va = 1;  -- Mutable binding
-a = va;
-va := 2;
+mut ma = 1;  -- Mutable binding
+a = ma;
+ma := 2;
 println a  -- 1
 
 ra: Ref Int = &1;  -- Mutable reference
@@ -11,11 +11,11 @@ rc = ra;
 rc << 3;
 println ra>>  -- 3
 
-stash = | a => { content: Ref a }
+Stash = | A => { content: Ref A }
 
-f: (a: Type)? -> stash a -> Ref a =
+f: (A: Type)? -> Stash A -> Ref A =
   | { content } => content
 
-my_stash = { content = &0 };
-f my_stash << 1;
-assert_eq my_stash.content>> 1
+stash = { content = &0 };
+f stash << 1;
+assert_eq stash.content>> 1

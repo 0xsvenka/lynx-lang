@@ -4,7 +4,7 @@ Note: Lynx is still in the early stage of development. Stay tuned :)
 
 ## Philosophy
 
-*Simplicity, generality, flexibility - and being intuitive.*
+*Simplicity, consistency, flexibility - and being intuitive.*
 
 Lynx focuses on reasonable abstractions such as:
 

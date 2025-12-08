@@ -1,53 +1,53 @@
-mul: Type -> Type -> Type' =
-  | a b =>
+Mul: Type -> Type -> Type' =
+  | A B =>
   {
-    r: Type,
-    mul: a -> b -> r
+    R: Type,
+    mul: A -> B -> R
   }
 
-int_int_mul: mul Int Int =
+int_int_mul: Mul Int Int =
   {
-    r = Int,
+    R = Int,
     mul = __builtin_mul_int
   }
 
 fn_fn_mul:
-    (a: Type)? -> (b: Type)? -> (c: Type)? -> mul (b -> c) (a -> b) =
+    (A: Type)? -> (B: Type)? -> (C: Type)? -> Mul (B -> C) (A -> B) =
   {
-    r = a -> c,
+    R = A -> C,
     mul = | f g x => f (g x)
   }
 
-(*): (a: Type)? -> (b: Type)? -> (m: mul a b)~ -> a -> b -> m.r
-  = m.mul
+(*): (A: Type)? -> (B: Type)? -> (m: Mul A B)~ -> A -> B -> m.R =
+  | m~ => m.mul
 
-eq: Type -> Type =
-  | a =>
+Eq: Type -> Type =
+  | A =>
   {
-    (==): a -> a -> Bool,
-    (!=): a -> a -> Bool
+    (==): A -> A -> Bool,
+    (!=): A -> A -> Bool
   }
 
 eq_default:
-    (a: Type)? -> (a -> a -> Bool) -> (a -> a -> Bool) =
+    (A: Type)? -> (A -> A -> Bool) -> (A -> A -> Bool) =
   | eq =>
   {
     (!=) = | x y => not (eq x y)
   }
 
-int_eq: eq Int =
+int_eq: Eq Int =
   {
     (==) = __builtin_eq_int,
-    (eq_default (==))...  -- TODO
+    (eq_default (==))...
   }
 
-ctor Complex: Type -> Type = | (a: Type) => a * a
+ctor Complex: Type -> Type;
+ctor complex: (A: Type)? -> A -> A -> Complex A
 
-eq_complex: (a: Type)? -> (eq a)~ -> eq (Complex a) =
-  | e~ =>
+eq_complex: (A: Type)? -> (Eq A)~ -> Eq (Complex A) =
   {
     (==) =
-      | (a1, b1) (a2, b2) =>
-        a1 == a2 && b1 == b2,
+      | (complex x1 y1) (complex x2 y2) =>
+        x1 == x2 && y1 == y2,
     (eq_default (==))...
   }

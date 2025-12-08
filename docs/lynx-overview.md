@@ -2,7 +2,7 @@
 
 ## 1. Design Philosophy
 
-*Simplicity, generality, flexibility - and being intuitive.*
+*Simplicity, consistency, flexibility - and being intuitive.*
 
 ---
 
@@ -62,7 +62,7 @@ println result
 
 - Lists: `[a, b, c]` desugars to `cons a (cons b (cons c nil))`.
 
-- Records: `{ name = "Bob" }`, whose type is written as `{ name : Str }`.
+- Records: `{ name = "Bob" }`, whose type is written as `{ name: Str }`.
 
 - Tuples: `(1, 1.0, 'a')` desugars to `pair 1 (pair 1.0 'a')`, whose type is `Int * Float * Char`, or more verbosely, `Pair Int (Pair Float Char)`.
 
@@ -74,10 +74,10 @@ println result
 
 ### Bindings
 
-Binds a name to an expression.
+Binds a name to an expression, with pattern matching support.
 
 ```lynx
-name = expression
+pattern = expression
 ```
 
 - Immutable and recursive by default.
@@ -89,9 +89,9 @@ name = expression
 Special names that describe patterns.
 
 ```lynx
-ctor Option : Type -> Type;
-ctor some : %~A -> A -> Option A;
-ctor none : %~A -> Option A
+ctor Option: Type -> Type;
+ctor some: (A: Type)? -> A -> Option A;
+ctor none: (A: Type)? -> Option A
 ```
 
 - ADTs and GADTs implemented in identical manner.
@@ -111,7 +111,7 @@ ctor none : %~A -> Option A
 
 - Patterns: atoms, literals, constructors, wildcards (`_`), alternation (`| 1 | 2 => ...`).
 
-- Syntactic sugar for multi-parameter functions: `| a b => ...` desugars to curried function `| a => | b => ...`, which helps with complex patterns, e.g. `| _ [x] (y+:ys) => ...`.
+- Syntactic sugar for multi-parameter functions: `| a b => ...` desugars to curried function `| a => (| b => ...)`, which helps with complex patterns, e.g. `| _ [x] (y+:ys) => ...`.
 
 - Used as the primary way of defining functions:
 
@@ -145,43 +145,47 @@ ctor none : %~A -> Option A
 
 - Types can be stored in lists, passed around to functions...
 
-- Type-level functions are no different from ordinary functions: `Id : Type -> Type`.
+- Type-level functions are no different from ordinary functions: `id: Type -> Type`.
 
 - `List`, `Option` etc are just type-level constructors.
 
 ### Parameter annotations
 
-`TypeName ~ param_name` - binds a name to the parameter of the given type for use later in the same type expression, enabling dependent types:
+In a type expression, `param_name: type` binds that name to the parameter of the given type for later use:
 
 ```lynx
-make_list : (Type ~ A) -> A -> List A =
+make_list: (A: Type) -> A -> List A =
   | _ a => [a];
 l = make_list Int 5
 ```
 
 ### Contextual parameters
 
-`%T` - inferred from context (e.g., type of arguments), no need to pass the corresponding argument explicitly.
+`T?` - inferred from context (e.g., type of arguments), no need to pass the corresponding argument explicitly:
 
-- Syntactic sugar `%~A` is equivalent to `%(Type ~ A)`, meaning "infer a type and name it `A`".
+```lynx
+make_list: (A: Type)? -> A -> List A =
+  | a => [a];
+l = make_list 5
+```
 
 ### Implicit parameters
 
-`#T` - resolved by instance search in current namespace, no need to pass the corresponding argument explicitly.
+`T~` - resolved by instance search in current namespace, no need to pass the corresponding argument explicitly.
 
 - Instances are ordinary values of the corresponding type.
 
 - Enables ad-hoc polymorphism without magic:
 
   ```lynx
-  multiply_int : Multiply Int Int =
+  int_int_mul: Mul Int Int =
   {
     R = Int,
     mul = __builtin_mul_int
   }
 
-  (*) : %~A -> %~B -> #((Multiply A B)~m) -> A -> B -> m.R
-    = m.mul
+  (*): (A: Type)? -> (B: Type)? -> (m: Mul A B)~ -> A -> B -> m.R
+    = | m~ => m.mul
   ```
 
 ---
