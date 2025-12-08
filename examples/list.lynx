@@ -1,97 +1,99 @@
 ctor List: Type -> Type;
-ctor nil: %~A -> List A;
-ctor cons: %~A -> A -> List A -> List A
+ctor Nil: (a: Type)? -> List a;
+ctor Cons: (a: Type)? -> a -> List a -> List a
 
-ctor (+:) = cons
+ctor (+:) = Cons
 
-(++): %~A -> List A -> List A -> List A =
+(++): (a: Type)? -> List a -> List a -> List a =
   | [] ys => ys
   | (x+:xs) ys => x +: (xs++ys)
 
-head!: %~A -> List A -> A =
+head!: (a: Type)? -> List a -> a =
   | [] => error! "empty list"
   | (x+:_) => x
 
-tail!: %~A -> List A -> List A =
+tail!: (a: Type)? -> List a -> List a =
   | [] => error! "empty list"
   | (_+:xs) => xs
 
-init!: %~A -> List A -> List A =
+init!: (a: Type)? -> List a -> List a =
   | [] => error! "empty list"
   | [_] => []
   | (x+:xs) => x +: init! xs
 
-last!: %~A -> List A -> A =
+last!: (a: Type)? -> List a -> a =
   | [] => error! "empty list"
   | [x] => x
   | (_+:xs) => last! xs
 
-shead: %~A -> List A -> Option A =
-  | [] => none
-  | (x+:_) => some x
+shead: (a: Type)? -> List a -> Option a =
+  | [] => None
+  | (x+:_) => Some x
 
-stail: %~A -> List A -> Option (List A) =
-  | [] => none
-  | (_+:xs) => some xs
+stail: (a: Type)? -> List a -> Option (List a) =
+  | [] => None
+  | (_+:xs) => Some xs
 
-sinit: %~A -> List A -> Option (List A) =
-  | [] => none
+sinit: (a: Type)? -> List a -> Option (List a) =
+  | [] => None
   | (x+:xs) => sinit xs |>
-    | (some ys) => some (x+:ys)
-    | none => some []
+    | (Some ys) => Some (x+:ys)
+    | None => Some []
 
-slast: %~A -> List A -> Option A =
-  | [] => none
-  | [x] => some x
+slast: (a: Type)? -> List a -> Option a =
+  | [] => None
+  | [x] => Some x
   | (_+:xs) => slast xs
 
-len: %~A -> List A -> Nat =
+len: (a: Type)? -> List a -> Int =
   | [] => 0
   | (_+:xs) => 1 + len xs
 
-has_elem: %~A -> #(Eq A) -> A -> List A -> Bool =
-  | _ [] => false
+has_elem: (a: Type)? -> (eq a)~ -> a -> List a -> Bool =
+  | _ [] => False
   | x (x'+:xs) =>
-    if x == x' then true
+    if x == x' then True
     else has_elem x xs
 
-zip: %~A -> %~B -> List A -> List B -> List (A*B) =
-  | [] _ | _ [] => []
+zip: (a: Type)? -> (b: Type)? -> List a -> List b -> List (a*b) =
+  | [] _
+  | _ [] => []
   | (x+:xs) (y+:ys) => (x, y) +: zip xs ys
 
-zip_with: %~A -> %~B -> %~C
-    -> (A -> B -> C) -> List A -> List B -> List C =
-  | _ [] _ => []
+zip_with:
+    (a: Type)? -> (b: Type)? -> (c: Type)?
+    -> (a -> b -> c) -> List a -> List b -> List c =
+  | _ [] _
   | _ _ [] => []
   | f (x+:xs) (y+:ys) => f x y +: zip_with f xs ys
 
-foldl: %~A -> %~B -> (B -> A -> B) -> B -> List A -> B =
+foldl: (a: Type)? -> (b: Type)? -> (b -> a -> b) -> b -> List a -> b =
   | _ z [] => z
   | f z (x+:xs) => foldl f (f z x) xs
 
-foldr: %~A -> %~B -> (A -> B -> B) -> B -> List A -> B =
+foldr: (a: Type)? -> (b: Type)? -> (a -> b -> b) -> b -> List a -> b =
   | _ z [] => z
   | f z (x+:xs) => f x (foldr f z xs)
 
-scanl: %~A -> %~B -> (B -> A -> B) -> B -> List A ->  =
+scanl: (a: Type)? -> (b: Type)? -> (b -> a -> b) -> b -> List a -> =
   | _ z [] => [z]
   | f z (x+:xs) => z +: scanl f (f z x) xs
 
-scanr: %~A -> %~B -> (A -> B -> B) -> B -> List A -> List B =
+scanr: (a: Type)? -> (b: Type)? -> (a -> b -> b) -> b -> List a -> List b =
   | _ z [] => [z]
-  | f z (x+:xs) => (
+  | f z (x+:xs) => do (
       ys = scanr f z xs;
       f x (head! ys) +: ys
     )
 
-map: %~A -> %~B -> (A -> B) -> List A -> List B =
+map: (a: Type)? -> (b: Type)? -> (a -> b) -> List a -> List b =
   | _ [] => []
   | f (x+:xs) => f x +: map f xs
 
-flat_map: %~A -> %~B -> (A -> List B) -> List A -> List B =
+flat_map: (a: Type)? -> (b: Type)? -> (a -> List b) -> List a -> List b =
   | f => foldr ((++) * f) []
 
-filter: %~A -> (A -> Bool) -> List A -> List A =
+filter: (a: Type)? -> (a -> Bool) -> List a -> List a =
   | _ [] => []
   | p (x+:xs) =>
     if p x then x +: filter p xs

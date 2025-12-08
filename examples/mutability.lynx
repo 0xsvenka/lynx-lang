@@ -3,22 +3,19 @@ a = va;
 va := 2;
 println a  -- 1
 
-ra: Ref Int = ref 1;  -- Mutable reference
+ra: Ref Int = &1;  -- Mutable reference
 mut rb = ra;
-rb := ref 2;
+rb := &2;
 println ra>>;  -- 1
 rc = ra;
 rc << 3;
 println ra>>  -- 3
 
-Stash = | a =>
-  {
-    content: Ref a
-  }
+stash = | a => { content: Ref a }
 
-f: %~a -> Stash a -> Ref a =
-  | {content} => content
+f: (a: Type)? -> stash a -> Ref a =
+  | { content } => content
 
-stash = {content = ref 0};
-f stash << 1;
-assert_eq stash.content>> 1
+my_stash = { content = &0 };
+f my_stash << 1;
+assert_eq my_stash.content>> 1

@@ -18,7 +18,7 @@ println multiline_str  -- A comment
 
 -- A comment in the middle
 
-std::list::from (1..100 by 3)
+std::list::from (1 .. 100 by 3)
   |> map (| x => x + 1) |> filter math::is_prime
   |> reduce (+)
   |> println

@@ -1,68 +1,53 @@
-Multiply: Type -> Type -> Type' =
-  | A B =>
+mul: Type -> Type -> Type' =
+  | a b =>
   {
-    R: Type,
-    mul: A -> B -> R
+    r: Type,
+    mul: a -> b -> r
   }
 
-multiply_int: Multiply Int Int =
+int_int_mul: mul Int Int =
   {
-    R = Int,
+    r = Int,
     mul = __builtin_mul_int
   }
 
-composition: %~A -> %~B -> %~C
-    -> Multiply (B -> C) (A -> B) =
+fn_fn_mul:
+    (a: Type)? -> (b: Type)? -> (c: Type)? -> mul (b -> c) (a -> b) =
   {
-    R = A -> C,
+    r = a -> c,
     mul = | f g x => f (g x)
   }
 
-(*): %~A -> %~B -> #((Multiply A B)~m)
-    -> A -> B -> m.R
+(*): (a: Type)? -> (b: Type)? -> (m: mul a b)~ -> a -> b -> m.r
   = m.mul
 
-
-Functor: (Type -> Type) -> Type' =
-  | F =>
+eq: Type -> Type =
+  | a =>
   {
-    fmap: %~A -> %~B
-      -> (A -> B) -> F A -> F B
-  }
-
-functor_list: Functor List =
-  {
-    fmap = list::map
-  }
-
-
-Eq: Type -> Type =
-  | A =>
-  {
-    (==): A -> A -> Bool,
-    (!=): A -> A -> Bool
+    (==): a -> a -> Bool,
+    (!=): a -> a -> Bool
   }
 
 eq_default:
-    %~A -> (A -> A -> Bool) -> (A -> A -> Bool) =
+    (a: Type)? -> (a -> a -> Bool) -> (a -> a -> Bool) =
   | eq =>
   {
     (!=) = | x y => not (eq x y)
   }
 
-eq_int: Eq Int =
+int_eq: eq Int =
   {
     (==) = __builtin_eq_int,
-    (eq_default (==))...
+    (eq_default (==))...  -- TODO
   }
 
-ctor Complex: Type -> Type;
-ctor complex: %~A -> A -> A -> Complex A
+ctor Complex: Type -> Type = | (a: Type) => a * a
 
-eq_complex: %~A -> #(Eq A) -> Eq (Complex A) =
-  | #e =>
+eq_complex: (a: Type)? -> (eq a)~ -> eq (Complex a) =
+  | e~ =>
   {
-    (==) = | (complex a1 b1) (complex a2 b2) =>
-        a1 e.== a2 && b1 e.== b2,
+    (==) =
+      | (a1, b1) (a2, b2) =>
+        a1 == a2 && b1 == b2,
     (eq_default (==))...
   }
