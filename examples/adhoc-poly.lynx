@@ -1,53 +1,44 @@
-Mul: Type -> Type -> Type' =
-  | A B =>
-  {
-    R: Type,
-    mul: A -> B -> R
-  }
+trait Mul(A, B) =
+  Result: Type;
+  mul: A -> B -> Result
+end
 
-int_int_mul: Mul Int Int =
-  {
-    R = Int,
-    mul = __builtin_mul_int
-  }
+impl Mul(Int, Int) =
+  Result = Int;
+  mul = __builtin_mul_int
+end
 
-fn_fn_mul:
-    (A: Type)? -> (B: Type)? -> (C: Type)? -> Mul (B -> C) (A -> B) =
-  {
-    R = A -> C,
-    mul = | f g x => f (g x)
-  }
+Type~A? -> Type~B? -> Type~C? ->
+impl Mul(B -> C, A -> B) =
+  Result = Int;
+  fn mul(f, g) = x => f(g(x))
+end
 
-(*): (A: Type)? -> (B: Type)? -> (m: Mul A B)~ -> A -> B -> m.R =
-  | m~ => m.mul
+fn (*)(
+  A: Type?, B: Type?, m: Mul(A, B)%, a: A, b: B
+): m.Result =
+  m.mul(a, b)
+end
 
-Eq: Type -> Type =
-  | A =>
-  {
-    (==): A -> A -> Bool,
-    (!=): A -> A -> Bool
-  }
+trait Eq(A) =
+  (==): A -> A -> Bool;
+  (!=): A -> A -> Bool
+end
 
-eq_default:
-    (A: Type)? -> (A -> A -> Bool) -> (A -> A -> Bool) =
-  | eq =>
-  {
-    (!=) = | x y => not (eq x y)
-  }
+impl Eq(Int) =
+  (==) = __builtin_eq_int;
+  (!=) = not * (==)
+end
 
-int_eq: Eq Int =
-  {
-    (==) = __builtin_eq_int,
-    (eq_default (==))...
-  }
+data Complex(A) =
+  complex(A: Type?, _: A, _: A)
+end
 
-ctor Complex: Type -> Type;
-ctor complex: (A: Type)? -> A -> A -> Complex A
+Type~A? -> Eq(A)% -> 
+impl Eq(Complex(A)) =
+  fn (==)(complex(x1, y1), complex(x2, y2)) =
+    x1 == x2 && y1 == y2
+  end
 
-eq_complex: (A: Type)? -> (Eq A)~ -> Eq (Complex A) =
-  {
-    (==) =
-      | (complex x1 y1) (complex x2 y2) =>
-        x1 == x2 && y1 == y2,
-    (eq_default (==))...
-  }
+  (!=) = not * (==)
+end
