@@ -1,22 +1,24 @@
 mut ma = 1;  -- Mutable binding
 a = ma;
 ma := 2;
-println(a)  -- 1
+println a  -- 1
 
-ra: Cell(Int) = cell(1);  -- Mutable cell
+ra: Cell Int = cell 1;  -- Mutable cell
 mut rb = ra;
-rb := cell(2);
-println(!ra);  -- 1
+rb := cell 2;
+println !ra;  -- 1
 rc = ra;
 rc << 3;
-println(!ra)  -- 3
+println !ra  -- 3
 
-fn Stash(A: Type) = { content: Cell(A) } end
+fn Stash (A: Type) : Type {
+    { content: Cell A }
+}
 
-fn f(A: Type?, {content}: Stash(A)): Cell(A) =
-  content
-end
+fn f @A ({content}: Stash A) : Cell A {
+    content
+}
 
-stash = { content = cell(0) };
-f(stash) << 1;
-assert_eq(!stash.content, 1)
+stash = { content = cell 0 };
+f stash << 1;
+assert_eq !stash.content 1

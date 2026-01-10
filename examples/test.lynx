@@ -1,33 +1,32 @@
 import std::math
 
-ctor Option: Type -> Type
-
-f = i => j => i + j;
-g = (i; j) => i + j
+f: Int -> Int -> Int = i => j => i + j;
+g: Int * Int -> Int = (i; j) => i + j
 
 c0_' = '\0';
 -- Error!
-bad_ch_1 = ''; bad_ch_2 = 'aba'; bad_ch_3 = 'a
+--! bad_ch_1 = ''; bad_ch_2 = 'aba'; bad_ch_3 = 'a
 
-s = "bc\n\t\\\";  -- Error!
+--! s = "bc\n\t\\\";  -- Error!
 multiline_str =
-  "This is a multi-line" \\string literal.
-  -- Comments do not break the multi-line string
-  \\ \n \t
-  ;
-println(multiline_str)  -- A comment
+    "This is a multi-line" \\string literal.
+    -- Comments do not break the multi-line string
+    \\ \n \t
+    ;
+println multiline_str  -- A comment
 
--- A comment in the middle
+-- A comment in midair
 
-list::from(range(1, 100, 3))
-  |> map(x => x + 1) |> filter(math::is_prime)
-  |> reduce((+))
+..{1; 100; 2}
+  |> to_list
+  |> map (x => x + 1) |> filter math::is_prime
+  |> reduce (+)
   |> println
 
-_ = case 3 of
-  | 1 | 2 => "small"
-  | _ => "big"
-  end
+_ = match std::rand::int 1 101 {
+    1 | 2 => "small";
+    _ => "big"
+}
 
-a +-- 1321;  -- `--` in `+--` does NOT begin a comment
-a-- 13d;
+a +-- 123  -- `--` in `+--` does NOT begin a comment
+a-- 123
