@@ -18,10 +18,10 @@ println multiline_str  -- A comment
 -- A comment in midair
 
 ..{1; 100; 2}
-  |> to_list
-  |> map (x => x + 1) |> filter math::is_prime
-  |> reduce (+)
-  |> println
+    |> to_list
+    |> map (x => x + 1) |> filter math::is_prime
+    |> reduce (+)
+    |> println
 
 _ = match std::rand::int 1 101 {
     1 | 2 => "small";

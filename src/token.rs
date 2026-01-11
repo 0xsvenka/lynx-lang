@@ -38,7 +38,7 @@ impl fmt::Display for Span {
 }
 
 /// Various kinds of tokens.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TokenKind {
     /// Identifier.
     Id(
@@ -93,22 +93,18 @@ pub enum TokenKind {
     Dot,
     /// Keyword `->`.
     Arrow,
+    /// Keyword `?`.
+    Question,
+    /// Keyword `~`.
+    Tilde,
+    /// Keyword `|`.
+    Pipe,
+    /// Keyword `@`.
+    At,
     /// Keyword `=>`.
     FatArrow,
     /// Keyword `=`.
-    Bind,
-    /// Keyword `@`.
-    At,
-    /// Keyword `|`.
-    Pipe,
-    /// Keyword `#`.
-    Hash,
-    /// Keyword `%`.
-    Percent,
-    /// Keyword `~`.
-    Tilde,
-    /// Keyword `%~`.
-    PercentTilde,
+    Eq,
 
     // Separators
     /// `(` (left parenthesis).

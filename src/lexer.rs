@@ -1,7 +1,7 @@
 use std::{
     collections::{HashMap, HashSet},
-    iter::{Enumerate, Peekable},
-    str::{Chars, Lines},
+    iter::Peekable,
+    str::Chars,
 };
 
 use crate::{
@@ -10,6 +10,7 @@ use crate::{
         Pos, Span, Token,
         TokenKind::{self, *},
     },
+    token_stream::TokenStream,
 };
 
 /// Lexer for a single line of Lynx source code.
@@ -64,14 +65,12 @@ impl<'a> LineLexer<'a> {
                 ("::", DoubleColon),
                 (".", Dot),
                 ("->", Arrow),
-                ("=>", FatArrow),
-                ("=", Bind),
-                ("@", At),
-                ("|", Pipe),
-                ("#", Hash),
-                ("%", Percent),
+                ("?", Question),
                 ("~", Tilde),
-                ("%~", PercentTilde),
+                ("|", Pipe),
+                ("@", At),
+                ("=>", FatArrow),
+                ("=", Eq),
             ]),
             sym_char_set: HashSet::from([
                 '~', '`', '!', '@', '#', '$', '%', '^', '&', '*', '-', '+', '=', '|', '\\', ':',
@@ -89,7 +88,7 @@ impl<'a> LineLexer<'a> {
     }
 
     /// Returns current position.
-    /// #[inline]
+    #[inline]
     fn pos(&self) -> Pos {
         Pos(self.line_no, self.col_no)
     }
@@ -457,98 +456,79 @@ impl<'a> LineLexer<'a> {
     }
 }
 
-impl<'a> Iterator for LineLexer<'a> {
-    type Item = Result<Token, Error>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.done {
-            return None;
-        }
-
-        self.skip_ws();
-
-        match self.chars.peek() {
-            None => {
-                // Already at line end
-                self.done = true;
-                if self.is_blank {
-                    // A blank line emits an ExprEnd
-                    Some(Ok(Token(ExprEnd, Span(self.pos(), self.pos()))))
-                } else {
-                    None
-                }
+impl<'a> LineLexer<'a> {
+    /// Lexes the line, returns either a [TokenStream] of all [Token]s
+    /// or the first [Error] encountered.
+    pub fn tokenize(&mut self) -> Result<TokenStream, Error> {
+        let mut tokens = Vec::new();
+        loop {
+            self.skip_ws();
+            if self.done {
+                break;
             }
-            Some(&c) => {
-                self.is_blank = false;
-                match c {
-                    '(' => Some(Ok(self.lex_lp())),
-                    ')' => Some(Ok(self.lex_rp())),
-                    '[' => Some(Ok(self.lex_lb())),
-                    ']' => Some(Ok(self.lex_rb())),
-                    '{' => Some(Ok(self.lex_lc())),
-                    '}' => Some(Ok(self.lex_rc())),
-                    ',' => Some(Ok(self.lex_comma())),
-                    ';' => Some(Ok(self.lex_semicolon())),
-                    '-' => self.lex_hyphen().map(|token| Ok(token)),
-                    '\\' => Some(Ok(self.lex_backslash())),
-                    '\'' => Some(self.lex_char_lit()),
-                    '"' => Some(self.lex_quoted_str_lit()),
-                    c if c.is_ascii_digit() => Some(self.lex_num_lit(c)),
-                    c if c.is_alphabetic() || c == '_' => Some(Ok(self.lex_alpha(c))),
-                    c if self.sym_char_set.contains(&c) => Some(Ok(self.lex_sym(c))),
-
-                    // The lookahead cannot be lexed
-                    _ => {
-                        self.advance();
-                        Some(Err(Error::UnexpectedChar(Span(self.pos(), self.pos()))))
+            match self.chars.peek() {
+                None => {
+                    self.done = true;
+                    if self.is_blank {
+                        tokens.push(Token(ExprEnd, Span(self.pos(), self.pos())));
                     }
+                    break;
+                }
+                Some(&c) => {
+                    self.is_blank = false;
+                    let result = match c {
+                        '(' => Ok(self.lex_lp()),
+                        ')' => Ok(self.lex_rp()),
+                        '[' => Ok(self.lex_lb()),
+                        ']' => Ok(self.lex_rb()),
+                        '{' => Ok(self.lex_lc()),
+                        '}' => Ok(self.lex_rc()),
+                        ',' => Ok(self.lex_comma()),
+                        ';' => Ok(self.lex_semicolon()),
+                        '-' => match self.lex_hyphen() {
+                            Some(token) => Ok(token),
+                            None => break,
+                        },
+                        '\\' => Ok(self.lex_backslash()),
+                        '\'' => self.lex_char_lit(),
+                        '"' => self.lex_quoted_str_lit(),
+                        c if c.is_ascii_digit() => self.lex_num_lit(c),
+                        c if c.is_alphabetic() || c == '_' => Ok(self.lex_alpha(c)),
+                        c if self.sym_char_set.contains(&c) => Ok(self.lex_sym(c)),
+                        _ => {
+                            self.advance();
+                            Err(Error::UnexpectedChar(Span(self.pos(), self.pos())))
+                        }
+                    };
+                    tokens.push(result?);
                 }
             }
         }
+        Ok(TokenStream::new(tokens))
     }
 }
 
 /// Top-level lexer for Lynx source code.
 pub struct Lexer<'a> {
-    /// Indexed iterator over lines of the source code.
-    lines: Enumerate<Lines<'a>>,
-    /// Current [`LineLexer`], if any.
-    current_line_lexer: Option<LineLexer<'a>>,
+    src: &'a str,
 }
 
 impl<'a> Lexer<'a> {
     /// Creates a [`Lexer`] from the source code.
     pub fn new(src: &'a str) -> Self {
-        Self {
-            lines: src.lines().enumerate(),
-            current_line_lexer: None,
-        }
+        Self { src }
     }
-}
 
-impl<'a> Iterator for Lexer<'a> {
-    type Item = Result<Token, Error>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            // If we have a current line, try to get the next token from it
-            if let Some(ref mut lexer) = self.current_line_lexer {
-                if let Some(token) = lexer.next() {
-                    return Some(token);
-                }
-                // Current line exhausted, fall through to load next line
-            }
-
-            match self.lines.next() {
-                Some((line_idx, line_str)) => {
-                    let line_no = line_idx + 1;
-                    self.current_line_lexer = Some(LineLexer::new(line_str, line_no));
-                }
-                None => {
-                    self.current_line_lexer = None;
-                    return None;
-                }
-            }
+    /// Lexes the source code, returns either a [TokenStream] of all [Token]s
+    /// or the first [Error] encountered.
+    pub fn tokenize(&self) -> Result<TokenStream, Error> {
+        let mut tokens = Vec::new();
+        for (line_idx, line_str) in self.src.lines().enumerate() {
+            let line_no = line_idx + 1;
+            let mut line_lexer = LineLexer::new(line_str, line_no);
+            let line_stream = line_lexer.tokenize()?;
+            tokens.extend(line_stream.buffer);
         }
+        Ok(TokenStream::new(tokens))
     }
 }

@@ -1,10 +1,11 @@
 use crate::{lexer::Lexer, parser::Parser};
 
+mod ast;
 mod error;
-mod expr;
 mod lexer;
 mod parser;
 mod token;
+mod token_stream;
 
 fn main() {
     // TODO: Handle the situations where wrong args are given
@@ -13,7 +14,7 @@ fn main() {
 
     let lexer = Lexer::new(&src);
     let mut _parser = Parser {};
-    for result in lexer {
-        println!("{:?}", result);
+    for token in lexer.tokenize().unwrap().buffer {
+        println!("{}", token);
     }
 }

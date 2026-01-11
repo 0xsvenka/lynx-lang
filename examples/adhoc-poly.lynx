@@ -8,7 +8,7 @@ impl Mul Int Int {
     mul = __builtin_mul_int
 }
 
-for A B C impl Mul (B -> C) (A -> B) {
+for A, B, C impl Mul (B -> C) (A -> B) {
     Result = A -> C;
     fn mul f g { x => f (g x) }
 }
@@ -31,7 +31,7 @@ data Complex (A: Type) {
     complex @A (_: A) (_: A)
 }
 
-for A (_: Eq A) impl Eq (Complex A) {
+for A, (_: Eq A) impl Eq (Complex A) {
     fn (==) (complex x1 y1) (complex x2 y2) {
         x1 == x2 && y1 == y2
     };
