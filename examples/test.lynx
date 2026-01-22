@@ -1,7 +1,8 @@
 import std::math
 
 f: Int -> Int -> Int = i => j => i + j;
-g: Int * Int -> Int = (i; j) => i + j
+g: Int * Int -> Int = (i, j) => i + j;
+println (f 1 2 ++ ' ' ++ g (1, 2))  -- Prints "3 3"
 
 c0_' = '\0';
 -- Error!
@@ -17,16 +18,16 @@ println multiline_str  -- A comment
 
 -- A comment in midair
 
-..{1; 100; 2}
+range (1, 100, 2)
     |> to_list
     |> map (x => x + 1) |> filter math::is_prime
     |> reduce (+)
     |> println
 
-_ = match std::rand::int 1 101 {
+_ = match std::rand::rand_int (1, 101) {
     1 | 2 => "small";
     _ => "big"
 }
 
-a +-- 123  -- `--` in `+--` does NOT begin a comment
+a +-- 123;  -- `--` in `+--` does NOT begin a comment
 a-- 123
