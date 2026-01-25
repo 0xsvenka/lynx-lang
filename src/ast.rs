@@ -16,10 +16,10 @@ impl Display for Expr {
 
 #[derive(Debug)]
 pub enum AtomType {
+    Id(String),
+    Op(String),
     IntLit(i64),
     FloatLit(f64),
     CharLit(f64),
     StrLit(String),
-    Id(String),
-    Op(String),
 }

@@ -76,36 +76,6 @@ pub enum TokenKind {
         String,
     ),
 
-    // Alphabetic keywords
-    /// Keyword `ctor`.
-    Ctor,
-    /// Keyword `import`.
-    Import,
-    /// Keyword `_`.
-    Underscore,
-
-    // Symbolic keywords
-    /// Keyword `:`.
-    Colon,
-    /// Keyword `::`.
-    DoubleColon,
-    /// Keyword `.`.
-    Dot,
-    /// Keyword `->`.
-    Arrow,
-    /// Keyword `?`.
-    Question,
-    /// Keyword `~`.
-    Tilde,
-    /// Keyword `|`.
-    Pipe,
-    /// Keyword `@`.
-    At,
-    /// Keyword `=>`.
-    FatArrow,
-    /// Keyword `=`.
-    Eq,
-
     // Separators
     /// `(` (left parenthesis).
     Lp,
