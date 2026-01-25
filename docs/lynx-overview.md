@@ -1,199 +1,309 @@
-# Lynx Programming Language Overview
+# Lynx programming language overview
 
-## 1. Design Philosophy
-
-*Simplicity, consistency, flexibility - and being intuitive.*
-
----
-
-## 2. Basic Syntax & Layout Rules
+## Basic syntax
 
 ### Paragraph-based layout
 
-- The end of an expression is marked by `;` or a blank line.
+Expressions end with a semicolon or a blank line; whitespace and indentation are insignificant. Example:
 
-- Line breaks and indentation are insignificant; the language deliberately avoids complicated offside rules.
+```lynx
+a = 1; b = a;
+c = a + b
 
-This approach encourages (but does not enforce) a clean, one-expression-per-paragraph style, which is natural for functional programming constructs.
+println c
+```
+
+### Literals
+
+#### Interger
+
+Arbitrary size as long as the memory permits.
+
+#### Floating-point number
+
+Arbitrary precision as long as the memory permits.
+
+#### Character
+
+#### String
+
+- Quoted string
+
+  Supports escape sequences, e.g. `"Hello,\nWorld!"`; cannot span multiple lines.
+
+- Raw string
+
+  Begins with `\\` and extends to the end of the line, with no escape processing, e.g. `\\Each line starts with "\\" ...`.
+
+Adjacent string literals are concatenated, with line breaks inserted between. Example:
+
+```lynx
+s = "This is a multi-line..."
+  -- Comments do not break the multi-line string
+  \\...string literal.
+```
+
+### Patterns
+
+#### Atoms
+
+- Literal
+
+- Wildcard (`_`)
+
+- Constructor
+
+  Syntax: `` `A`` for the constructor named `A`.
+
+- Identifier
+  - Alphabetic identifier
+
+    Syntax: `[A-Za-z_][A-Za-z0-9_'!]*`.
+
+  - Symbolic identifier
+
+    Syntax: ``[~`!@#$%^&*+=|:<>.?/]``
+
+  `mut a` indicates that the identifier `a` is a mutable binding, i.e. it can be [rebound](#binding) to another value.
+
+#### Constructor expression
+
+Examples: `` `cons x xs``, `` `some a``.
+
+#### Tuple
+
+Items are separated by commas. `1, 'A'` is of type `Int * Char`. Note that the `,` operator has relatively low precedence, therefore, tuples often require surrounding parentheses, e.g. `f (a, b)`.
+
+#### List
+
+Wrapping a tuple in a pair of square brackets yields a list, e.g. `[a, b, c]`. The compiler ensures that list items are of the same type.
+
+#### Map
+
+Syntax: `#{k1, v1; k2, v2}`.
+
+#### Record
+
+`rec {name = }`, of type `Rec {name: Str}`.
+
+## Core primitives
+
+### Binding
+
+Syntax: `pattern = expr`.
 
 Example:
 
 ```lynx
-fact =
-  | 0 => 1
-  | n => n * fact (n - 1)
-
-result = fact 5;
-println result
+p = 1, 2; x, _ = p;
+println x
 ```
 
-### Comments
-
-- Line comments: `-- This is a comment`.
-
-### Literals
-
-- Integers: `0b1001`, `-2147483647` (arbitrary size as long as the memory permits).
-
-- Floating-point numbers: `3.14`, `6.626e-34` (arbitrary precision as long as the memory permits).
-
-- Characters: `'a'`, `'\0'`.
-
-- Strings
-
-  - Quoted strings: support escape sequences, e.g. `"Hello,\nWorld!"`; they cannot span multiple lines.
-
-  - Raw strings: begin with `\\` and extend to the end of the line, with no escape processing, e.g. `\\Each line starts with "\\" ...`.
-
-  - Adjacent string literals are concatenated, with line breaks inserted between them; thus, one may write:
-
-  ```lynx
-  multiline_str =
-    "This is a multi-line"
-    \\string literal.
-    -- Comments do not break the multi-line string
-    \\    Add some indentation.
-  \\Where the line starts doesn't matter.
-    \\No escape sequence is processed here:
-    \\" ' \ \\ \n
-    \\You will get a trailing '\n' due to the next line...
-    \\
-  ```
-
-- Lists: `[a, b, c]` desugars to `cons a (cons b (cons c nil))`.
-
-- Records: `{ name = "Bob" }`, whose type is written as `{ name: Str }`.
-
-- Tuples: `(1, 1.0, 'a')` desugars to `pair 1 (pair 1.0 'a')`, whose type is `Int * Float * Char`, or more verbosely, `Pair Int (Pair Float Char)`.
-
-  *As you might have guessed, this approach, i.e. modeling a tuple as composition of pairs, does not recognize so-called singleton tuples. Personally speaking, this approach feels more intuitive to me: it is composable, requires no "tuple primitive", and avoids the unnatural `(a,)` syntax. Meanwhile, we have a dedicated `()` literal that desugars to constructor `unit` of type `Unit`.*
-
----
-
-## 3. Core Primitives
-
-### Bindings
-
-Binds a name to an expression, with pattern matching support.
+Mutable bindings can be rebound with `:=`. Example:
 
 ```lynx
-pattern = expression
+a = 1; mut a' = a;
+a' := 2;
+println a;  -- 1
+println a'  -- 2
 ```
 
-- Immutable and recursive by default.
+### Lambda expression
 
-- No `let` needed; same syntax for both top-level and local bindings.
+Syntax: `param_pattern => expr`.
 
-### Constructors
+The `=>` operator is right‑associative, convenient for creating higher-order functions.
 
-Special names that describe patterns.
+Example:
 
 ```lynx
-ctor Option: Type -> Type;
-ctor some: (A: Type)? -> A -> Option A;
-ctor none: (A: Type)? -> Option A
+get_x = x, _ => x
+
+add = x => y => x + y
 ```
 
-- ADTs and GADTs implemented in identical manner.
+Note, however, that most functions are not defined this way directly; instead, the [`fn` macro](#fn-macro-function-definition) is more common.
 
-- Constructors inhabit ordinary types; for instance, `some` is just a polymorphic function that takes a parameter of arbitrary type `A` and returns `Option A`.
+### Function application
 
-- Treated differently during pattern matching.
+Syntax: `f x` (juxtaposition).
 
-### Pattern matching lambdas
+Function application is left-associative: `f x y` is equivalent to `(f x) y`.
+
+### Operator
+
+Lynx syntax relies heavily on operators. During parsing, even symbols like `,` and `=>` are handled as operators; in this way, the parser can follow a unified Pratt algorithm based on [operator precedence and associativity](#precedence-and-associativity-of-standard-operators).
+
+There are three kinds of operators: prefix, infix, and suffix, all of which can be enriched by user-defined ones. This allows for enormous flexibility.
 
 ```lynx
-| pattern1 => body1
-| pattern2 => body2
+infixl * 70;  -- Left associative, precedence set to 70
+fn (*) @(A, B, m: Mul (A, B)) (a: A) (b: B): m.R {
+  m.mul (a, b)
+}
 ```
 
-- `=>` is visually distinct from `->`, which is reserved for function types.
+#### Precedence and associativity of standard operators
 
-- Patterns: atoms, literals, constructors, wildcards (`_`), alternation (`| 1 | 2 => ...`).
+**TODO**
 
-- Syntactic sugar for multi-parameter functions: `| a b => ...` desugars to curried function `| a => (| b => ...)`, which helps with complex patterns, e.g. `| _ [x] (y+:ys) => ...`.
+## Type system
 
-- Used as the primary way of defining functions:
+Types are first-class values.
 
-  ```lynx
-  add = | a b => a + b
-  ```
+### Type annotation
 
-- Supports case matching naturally via the pipeline operator `|>`, eliminating the need for an additional "match expression".
+Syntax: `value: Type`.
 
-  ```lynx
-  value |>
-    | 0 => "zero"
-    | _ => "nonzero"
-  ```
+Type annotation helps the compiler with type inference as well as type checking. It may be employed on any expression, although the most common usage is at function definition.
 
-### Function application & operators
+### Parameter annotation
 
-- Application: `f x y` (left-associative, natural currying).
+Syntax: `ParamType ~ param_pattern`.
 
-- Infix operators: `(+)`, `(++)`, `(|>)` etc are just ordinary functions defined with surrounding parentheses. Programmers may create custom operators at their will.
+In a type expression, you can name any parameter for later use. `A ~ B` is the type-context equivalent of value-context `B : A`.
 
----
-
-## 4. Type System: Expressive & Innovative
-
-### Types as values
-
-- Structural instead of nominal typing.
-
-- Types are not erased and remain available exist at runtime.
-
-- Types can be stored in lists, passed around to functions...
-
-- Type-level functions are no different from ordinary functions: `id: Type -> Type`.
-
-- `List`, `Option` etc are just type-level constructors.
-
-### Parameter annotations
-
-In a type expression, `param_name: type` binds that name to the parameter of the given type for later use:
+Example:
 
 ```lynx
-make_list: (A: Type) -> A -> List A =
-  | _ a => [a];
-l = make_list Int 5
+map: (Type*Type ~ (A, B)) -> (A -> B) -> List A -> List B;
+map (Int, Str) to_str [1, 2, 3]
 ```
 
-### Contextual parameters
+### Contextual parameter
 
-`T?` - inferred from context (e.g., type of arguments), no need to pass the corresponding argument explicitly:
+Syntax: `@ParamType`.
+
+Contextual parameters do not need to be passed explicitly; instead, they are inferred lexically from the context (e.g. through parameter annotation, trait implementation search, etc).
+
+Example:
 
 ```lynx
-make_list: (A: Type)? -> A -> List A =
-  | a => [a];
-l = make_list 5
+map: @(Type*Type ~ (A, B)) -> (A -> B) -> List A -> List B
+
+(==): @((Type~A) * Eq A) -> A -> A -> Bool
 ```
 
-### Implicit parameters
+### Interior mutability
 
-`T~` - resolved by instance search in current namespace, no need to pass the corresponding argument explicitly.
+For any type `T`, the "mutable cell" type `&T` provides interior mutability. Note that this is a fundamentally distinct concept from mutable binding.
 
-- Instances are ordinary values of the corresponding type.
+- Create: the `ref` function.
 
-- Enables ad-hoc polymorphism without magic:
+- Inspect: prefix operator `!`.
 
-  ```lynx
-  int_int_mul: Mul Int Int =
-  {
-    R = Int,
-    mul = __builtin_mul_int
-  }
+- Mutate: infix operator `<<`.
 
-  (*): (A: Type)? -> (B: Type)? -> (m: Mul A B)~ -> A -> B -> m.R
-    = | m~ => m.mul
-  ```
+Note that the compiler will copy a value if it decides that the latter cannot be shared safely between a `T` and a `&T`.
 
----
+Example:
 
-## 5. Modules and Namespaces (TODO)
+```lynx
+ra: &Int = ref 1;
+ra << 3;
+println !ra
+```
 
----
+## Macros
 
-## 6. Metaprogramming (TODO)
+Macros are essentially compile-time functions that takes a token stream and returns an AST. When the Lynx parser encounters a macro invocation, it applies the custom parsing logic defined by that macro on the remaining token stream, after which it merges the resulting AST into the existing one. This process is called _macro expansion_. Macros may be created by the user.
 
-Lynx does not enforce a strict phase distinction between compile-time and runtime. Types are retained and can be computed, stored, and inspected at runtime, which should pave the way for type-rich metaprogramming.
+Here are some of the macros pre-defined by the language:
+
+### Control flow macros
+
+- `do`
+
+Evaluates to the last expression.
+
+```lynx
+println (do {
+    print "1 + 2 = ";
+    1
+} + 2)
+```
+
+- `if`
+
+```lynx
+if n % 3 == 0 && n % 5 == 0 {
+    println "FizzBuzz"
+} elif n % 3 == 0 {
+    println "Fizz"
+} elif n % 5 == 0 {
+    println "Buzz"
+} else {
+    println n
+}
+```
+
+- `while`
+
+```lynx
+mut i = 0;
+while i < 100 {
+    println i;
+    i := i + 1
+}
+```
+
+- `for`
+
+```lynx
+for k, v in #{1, 'A'; 2, 'B'} {
+  println k; println v
+}
+```
+
+- `match`
+
+```lynx
+match n {
+  1 | 2 => "small";
+  _ => "big"
+}
+```
+
+### `fn`: function definition
+
+```lynx
+fn f (n: Int): Int {
+    if n == 0 {1}
+    else {n * f (n-1)}
+}
+
+fn swap @A (a: &A, a': &A): Unit {
+    temp = !a;
+    a << !a';
+    a' << temp
+}
+```
+
+### `trait` & `impl`: ad-hoc polymorphism
+
+```lynx
+trait Eq (A: Type) {
+  eq: A * A -> Bool
+}
+
+impl Eq Int {
+  eq = __builtin_eq_int
+}
+```
+
+### `data`: ADT & GADT
+
+```lynx
+data Complex (A: Type) {
+  complex @A (_: A, _: A)
+}
+
+data Expr (A: Type) {
+  atom_expr @A (_: A): Expr A;
+  eq_expr @(A, _: Eq A) (_: Expr A, _: Expr A): Expr Bool
+}
+```
+
+## Modules & namespaces
+
+**TODO**

@@ -1,11 +1,8 @@
-use std::{
-    collections::{HashMap, HashSet},
-    iter::Peekable,
-    str::Chars,
-};
+use std::{collections::HashSet, iter::Peekable, str::Chars};
 
 use crate::{
     error::Error,
+    sym_table::OpTable,
     token::{
         Pos, Span, Token,
         TokenKind::{self, *},
@@ -36,13 +33,8 @@ struct LineLexer<'a> {
     /// Indicates whether the lexing process has completed.
     done: bool,
 
-    /// Table of Lynx's alphabetic keywords & corresponding [`TokenKind`]s,
-    /// used for distinguishing keywords from identifiers.
-    alpha_kw_table: HashMap<&'a str, TokenKind>,
-
-    /// Table of Lynx's symbolic keywords & corresponding [`TokenKind`]s,
-    /// used for distinguishing keywords from identifiers.
-    sym_kw_table: HashMap<&'a str, TokenKind>,
+    /// Table of operators.
+    op_table: &'a OpTable<'a>,
 
     /// Set of characters that are allowed in symbolic identifiers.
     sym_char_set: HashSet<char>,
@@ -51,7 +43,7 @@ struct LineLexer<'a> {
 impl<'a> LineLexer<'a> {
     /// Creates a [`LineLexer`] from a single line of source code
     /// and the line number.
-    fn new(src: &'a str, line_no: usize) -> Self {
+    fn new(src: &'a str, line_no: usize, op_table: &'a OpTable<'a>) -> Self {
         Self {
             chars: src.chars().peekable(),
             line_no,
@@ -59,19 +51,7 @@ impl<'a> LineLexer<'a> {
             is_blank: true,
             done: false,
 
-            alpha_kw_table: HashMap::from([("ctor", Ctor), ("import", Import), ("_", Underscore)]),
-            sym_kw_table: HashMap::from([
-                (":", Colon),
-                ("::", DoubleColon),
-                (".", Dot),
-                ("->", Arrow),
-                ("?", Question),
-                ("~", Tilde),
-                ("|", Pipe),
-                ("@", At),
-                ("=>", FatArrow),
-                ("=", Eq),
-            ]),
+            op_table,
             sym_char_set: HashSet::from([
                 '~', '`', '!', '@', '#', '$', '%', '^', '&', '*', '-', '+', '=', '|', '\\', ':',
                 '\'', '<', '>', '.', '?', '/',
@@ -81,16 +61,22 @@ impl<'a> LineLexer<'a> {
 
     /// Updates the state of the lexer
     /// when advancing to the next character.
-    #[inline]
     fn advance(&mut self) {
         self.col_no += 1;
         self.chars.next();
     }
 
     /// Returns current position.
-    #[inline]
     fn pos(&self) -> Pos {
         Pos(self.line_no, self.col_no)
+    }
+
+    fn id_or_op(&self, name: String) -> TokenKind {
+        if self.op_table.contains(&name) {
+            Op(name)
+        } else {
+            Id(name)
+        }
     }
 
     /// Skips whitespace.
@@ -347,10 +333,7 @@ impl<'a> LineLexer<'a> {
             self.advance();
         }
 
-        match self.alpha_kw_table.get(name.as_str()) {
-            Some(kw_token_kind) => Token(kw_token_kind.to_owned(), Span(start_pos, self.pos())),
-            None => Token(Id(name), Span(start_pos, self.pos())),
-        }
+        Token(self.id_or_op(name), Span(start_pos, self.pos()))
     }
 
     /// Lexes symbolic identifiers and keywords,
@@ -372,10 +355,7 @@ impl<'a> LineLexer<'a> {
             self.advance();
         }
 
-        match self.sym_kw_table.get(name.as_str()) {
-            Some(kw_token_kind) => Token(kw_token_kind.to_owned(), Span(start_pos, self.pos())),
-            None => Token(Id(name), Span(start_pos, self.pos())),
-        }
+        Token(self.id_or_op(name), Span(start_pos, self.pos()))
     }
 
     /// Handles lookahead `(`.
@@ -510,13 +490,16 @@ impl<'a> LineLexer<'a> {
 
 /// Top-level lexer for Lynx source code.
 pub struct Lexer<'a> {
+    /// Source code to be lexed.
     src: &'a str,
+    /// Table of operators.
+    op_table: &'a OpTable<'a>,
 }
 
 impl<'a> Lexer<'a> {
     /// Creates a [`Lexer`] from the source code.
-    pub fn new(src: &'a str) -> Self {
-        Self { src }
+    pub fn new(src: &'a str, op_table: &'a OpTable<'a>) -> Self {
+        Self { src, op_table }
     }
 
     /// Lexes the source code, returns either a [TokenStream] of all [Token]s
@@ -525,7 +508,7 @@ impl<'a> Lexer<'a> {
         let mut tokens = Vec::new();
         for (line_idx, line_str) in self.src.lines().enumerate() {
             let line_no = line_idx + 1;
-            let mut line_lexer = LineLexer::new(line_str, line_no);
+            let mut line_lexer = LineLexer::new(line_str, line_no, self.op_table);
             let line_stream = line_lexer.tokenize()?;
             tokens.extend(line_stream.buffer);
         }

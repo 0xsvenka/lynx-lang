@@ -1,26 +1,26 @@
 trait Functor (F: Type -> Type) {
-    fmap: @A -> @B -> (A -> B) -> F A -> F B
+    fmap: @(Type*Type ~ (A, B)) -> (A -> B) -> F A -> F B
 }
 
 trait Applicative (F: Type -> Type) {
-    pure: @A -> A -> F A;
-    (<*>): @A -> @B -> F (A->B) -> F A -> F B
+    pure: @(Type ~ A) -> A -> F A;
+    apply: @(Type*Type ~ (A, B)) -> F (A->B) -> F A -> F B
 }
 
 trait Monad (M: Type -> Type) {
-    return: @A -> A -> M A;
-    (>>=): @A -> @B -> M A -> (A -> M B) -> M B
+    return: @(Type ~ A) -> A -> M A;
+    bind: @(Type*Type ~ (A, B)) -> M A -> (A -> M B) -> M B
 }
 
-for F, (a: Applicative F) impl Functor F {
-    fmap = a.(<*>) * a.pure
+impl Functor F for (F, a: Applicative F) {
+    fmap = a.apply * a.pure
 }
 
-for M, (m: Monad M) impl Applicative M {
+impl Applicative M for (M, m: Monad M) {
     pure = m.return;
-    fn (<*>) mf ma {
-        mf >>= (f =>
-            ma >>= (a =>
-                m.return (f a)))
+    fn apply mf ma {
+        m.bind mf (f =>
+        m.bind ma (a =>
+        m.return (f a)))
     }
 }
