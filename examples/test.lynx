@@ -1,8 +1,8 @@
 import std::math
 
 f: Int -> Int -> Int = i => j => i + j;
-g: Int * Int -> Int = (i, j) => i + j;
-println (f 1 2 ++ ' ' ++ g (1, 2))  -- Prints "3 3"
+g: Int * Int -> Int = i, j => i + j;
+println fmt {"{} = {}"; f 1 2, g (1, 2)}  -- Prints "3 = 3"
 
 c0_' = '\0';
 -- Error!

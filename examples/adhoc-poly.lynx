@@ -38,7 +38,7 @@ data Complex (A: Type) {
 }
 
 impl Eq (Complex A) for (A, _: Eq A) {
-    fn (==) (complex (x1, y1), complex (x2, y2)) {
+    fn eq (complex (x1, y1), complex (x2, y2)) {
         x1 == x2 && y1 == y2
     }
 }
