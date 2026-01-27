@@ -1,94 +1,121 @@
 # Lynx programming language overview
 
+Lynx is an expression-oriented language designed around explicit structure, uniform reference semantics, and operator-driven syntax. Its core philosophy emphasizes clarity, predictable semantics, and composable abstractions, while providing powerful tools like pattern matching, first-class types, macros, and interior mutability.
+
 ## Basic syntax
 
-### Paragraph-based layout
+### Layout rule
 
-Expressions end with a semicolon or a blank line; whitespace and indentation are insignificant. Example:
+Lynx follows a paragraph-based layout: expressions end with a semicolon or a _blank line_; whitespace and indentation are insignificant.
 
 ```lynx
-a = 1; b = a;
+a = 1; b =
+a;
 c = a + b
 
 println c
 ```
 
-### Literals
+### Atoms
 
-#### Interger
+#### Literals
 
-Arbitrary size as long as the memory permits.
+##### Unit
 
-#### Floating-point number
+The unit literal `()` is the only value of type `Unit`.
 
-Arbitrary precision as long as the memory permits.
+```lynx
+assert_eq (type_of println, Str -> Unit);
+assert_eq (println "Hello", ())
+```
 
-#### Character
+##### Interger & floating-point
 
-#### String
+Interger and floating-point literals are typed `Int` and `Float` respectively. They may be of arbitrary size and precision, limited only by memory.
 
-- Quoted string
+##### Character
 
-  Supports escape sequences, e.g. `"Hello,\nWorld!"`; cannot span multiple lines.
+Character literals are typed `Char`. They must be be valid UTF-8.
 
-- Raw string
+##### String
 
-  Begins with `\\` and extends to the end of the line, with no escape processing, e.g. `\\Each line starts with "\\" ...`.
+String literals are typed `Str`. They must be valid UTF-8.
 
-Adjacent string literals are concatenated, with line breaks inserted between. Example:
+There are two kinds of string literals:
+
+- **Quoted string** is delimited by double quotes. It supports escape sequences but may not span multiple lines, e.g., `"Hello,\nWorld!"`.
+
+- **Raw string** begins with `\\` and extends to the end of the line, with no escape processing, e.g.,
+
+  ```lynx
+  \\Each line starts with "\\" ...
+  ```
+
+Adjacent string literals are concatenated, with line breaks inserted between:
 
 ```lynx
 s = "This is a multi-line..."
-  -- Comments do not break the multi-line string
-  \\...string literal.
+-- Comments do not break it
+    \\...string literal.
 ```
 
-### Patterns
+#### Wildcard (`_`)
 
-#### Atoms
+#### Identifier
 
-- Literal
+There are two kinds of identifiers:
 
-- Wildcard (`_`)
+- Alphabetic identifier: `[A-Za-z_][A-Za-z0-9_'!]*`.
 
-- Constructor
+- Symbolic identifier: ``[~`!@#$%^&*+=|:<>.?/]`` **TODO**
 
-  Syntax: `` `A`` for the constructor named `A`.
+Note, however, that their difference is solely lexical, and they are equivalent in functionality.
 
-- Identifier
-  - Alphabetic identifier
+##### The `mut` modifier
 
-    Syntax: `[A-Za-z_][A-Za-z0-9_'!]*`.
+`mut a` declares **mutable identifier** `a`, i.e. it may be [rebound](#binding-expression) to another value.
 
-  - Symbolic identifier
-
-    Syntax: ``[~`!@#$%^&*+=|:<>.?/]``
-
-  `mut a` indicates that the identifier `a` is a mutable binding, i.e. it can be [rebound](#binding) to another value.
-
-#### Constructor expression
-
-Examples: `` `cons x xs``, `` `some a``.
+### Composite values
 
 #### Tuple
 
-Items are separated by commas. `1, 'A'` is of type `Int * Char`. Note that the `,` operator has relatively low precedence, therefore, tuples often require surrounding parentheses, e.g. `f (a, b)`.
+- Syntax: `a, b, c`.
+
+- Typing: `1, 'A'` is typed `Int * Char`.
+
+The composite nature of tuples means that nullary or unary tuples do not exist; neither atoms nor `()` are tuples.
+
+Due to the relatively low precedence of `,`, tuples often require surrounding parentheses, as in `f (a, b)`. These parentheses serve the sole duty of grouping and are not part of the tuple syntax.
 
 #### List
 
-Wrapping a tuple in a pair of square brackets yields a list, e.g. `[a, b, c]`. The compiler ensures that list items are of the same type.
+- Syntax: `[a0, a1, a2]`.
+
+- Typing: `[1, 2]` is typed `List Int`.
+
+  All elements must share the same type.
 
 #### Map
 
-Syntax: `#{k1, v1; k2, v2}`.
+- Syntax: `#{k0, v0; k1, v1; k2, v2}`.
+
+  Maps are introduced by the `#` [macro](#macros). Each key-value pair is written as a binary tuple, and different pairs are separated by `ExprEnd` (i.e. semicolon or blank line). The order of key-value pairs is insignificant.
+
+- Typing: `#{1, 'A'; 2, 'B'}` is typed `Map (Int, Char)`.
+
+  All keys share one type and all values share one type; of course, these two types may differ.
 
 #### Record
 
-`rec {name = }`, of type `Rec {name: Str}`.
+- Syntax: `rec {k0 = a, k1 = b, k2 = c}`.
 
-## Core primitives
+  Records are introduced by the `rec` [macro](#macros).
 
-### Binding
+- Typing: `rec {task = "write Lynx", todo = true}` is typed `Rec {task: Str, todo: Bool}`, where `Rec` is also a macro.
+
+Note that items are separated by the comma rather than the semicolon, which is explained by the fact that records are represented as tuples at the root level. Nevertheless, since record items are labeled, the order of them is insignificant.
+
+### Binding expression
 
 Syntax: `pattern = expr`.
 
@@ -99,7 +126,7 @@ p = 1, 2; x, _ = p;
 println x
 ```
 
-Mutable bindings can be rebound with `:=`. Example:
+Mutable identifiers may be rebound with `:=`. Example:
 
 ```lynx
 a = 1; mut a' = a;
@@ -132,9 +159,9 @@ Function application is left-associative: `f x y` is equivalent to `(f x) y`.
 
 ### Operator
 
-Lynx syntax relies heavily on operators. During parsing, even symbols like `,` and `=>` are handled as operators; in this way, the parser can follow a unified Pratt algorithm based on [operator precedence and associativity](#precedence-and-associativity-of-standard-operators).
+Lynx syntax relies heavily on operators. During parsing, even symbols like `,` and `=>` are handled as operators; this empowers the parser to follow a unified Pratt algorithm based on [operator precedence and associativity](#precedence-and-associativity-of-standard-operators).
 
-There are three kinds of operators: prefix, infix, and suffix, all of which can be enriched by user-defined ones. This allows for enormous flexibility.
+There are three kinds of operators: prefix, infix, and suffix, all of which may be enriched by user-defined ones. This allows for enormous flexibility.
 
 ```lynx
 infixl * 70;  -- Left associative, precedence set to 70
@@ -161,7 +188,7 @@ Type annotation helps the compiler with type inference as well as type checking.
 
 Syntax: `ParamType ~ param_pattern`.
 
-In a type expression, you can name any parameter for later use. `A ~ B` is the type-context equivalent of value-context `B : A`.
+In a type expression, you may name any parameter for later use. `A ~ B` is the type-context equivalent of value-context `B : A`.
 
 Example:
 
@@ -186,7 +213,7 @@ map: @(Type*Type ~ (A, B)) -> (A -> B) -> List A -> List B
 
 ### Interior mutability
 
-For any type `T`, the "mutable cell" type `&T` provides interior mutability. Note that this is a fundamentally distinct concept from mutable binding.
+For any type `T`, the "mutable cell" type `&T` provides interior mutability. Note that this is a distinct concept from mutable identifier.
 
 - Create: the `ref` function.
 
@@ -200,19 +227,20 @@ Example:
 
 ```lynx
 ra: &Int = ref 1;
+rb = ra;
 ra << 3;
-println !ra
+println !rb  -- 3
 ```
 
 ## Macros
 
-Macros are essentially compile-time functions that takes a token stream and returns an AST. When the Lynx parser encounters a macro invocation, it applies the custom parsing logic defined by that macro on the remaining token stream, after which it merges the resulting AST into the existing one. This process is called _macro expansion_. Macros may be created by the user.
+Macros are essentially compile-time functions that takes a token stream and returns an AST. When the Lynx parser encounters a macro invocation, it applies the custom parsing logic defined by that macro on the remaining token stream, after which it merges the resulting AST into the existing one. This process is called **macro expansion**. Macros may be created by the user.
 
 Here are some of the macros pre-defined by the language:
 
 ### Control flow macros
 
-- `do`
+#### `do`
 
 Evaluates to the last expression.
 
@@ -223,7 +251,7 @@ println (do {
 } + 2)
 ```
 
-- `if`
+#### `if`
 
 ```lynx
 if n % 3 == 0 && n % 5 == 0 {
@@ -237,7 +265,7 @@ if n % 3 == 0 && n % 5 == 0 {
 }
 ```
 
-- `while`
+#### `while`
 
 ```lynx
 mut i = 0;
@@ -247,7 +275,7 @@ while i < 100 {
 }
 ```
 
-- `for`
+#### `for`
 
 ```lynx
 for k, v in #{1, 'A'; 2, 'B'} {
@@ -255,7 +283,7 @@ for k, v in #{1, 'A'; 2, 'B'} {
 }
 ```
 
-- `match`
+#### `match`
 
 ```lynx
 match n {
@@ -304,6 +332,6 @@ data Expr (A: Type) {
 }
 ```
 
-## Modules & namespaces
+## Module system
 
 **TODO**
