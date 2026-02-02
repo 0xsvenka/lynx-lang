@@ -1,12 +1,12 @@
-import std::math
+import std::math;
 
 f: Int -> Int -> Int = i => j => i + j;
 g: Int * Int -> Int = (i, j) => i + j;
-println (fmt {"{} = {}"; f 1 2, g (1, 2)})  -- Prints "3 = 3"
+println (fmt {"{} = {}"; f 1 2, g (1, 2)});  -- Prints "3 = 3"
 
 c0_' = '\0';
 -- Error!
---! bad_ch_1 = ''; bad_ch_2 = 'aba'; bad_ch_3 = 'a
+--! bad_ch_1 = ''; bad_ch_2 = 'aba'; bad_ch_3 = 'a;
 
 --! s = "bc\n\t\\\";  -- Error!
 multiline_str =
@@ -14,7 +14,7 @@ multiline_str =
     -- Comments do not break the multi-line string
     \\ \n \t
     ;
-println multiline_str  -- A comment
+println multiline_str;  -- A comment
 
 -- A comment in midair
 
@@ -22,12 +22,12 @@ range (1, 100, 2)
     |> to_list
     |> map (x => x + 1) |> filter math::is_prime
     |> reduce (+)
-    |> println
+    |> println;
 
 _ = match (std::rand::rand_int (1, 101)) {
     1 | 2 => "small";
-    _ => "b" ++ "ig"
-}
+    _ => "b" ++ "ig";
+};
 
 a +-- 123;  -- `--` in `+--` does NOT begin a comment
-a-- 123
+a-- 123;

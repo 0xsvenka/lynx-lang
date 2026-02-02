@@ -1,7 +1,7 @@
 mut ma = 1;  -- Mutable binding
 a = ma;
 ma := 2;
-println a  -- 1
+println a;  -- 1
 
 ra: &Int = ref 1;  -- Mutable cell
 mut rb = ra;
@@ -9,16 +9,16 @@ rb := ref 2;
 println !ra;  -- 1
 rc = ra;
 rc << 3;
-println !ra  -- 3
+println !ra;  -- 3
 
 fn (Stash (A: Type): Type) {
-    Rec {content: &A}
-}
+    Rec {content: &A};
+};
 
 fn (f @A (rec {content}: Stash A): &A) {
-    content
-}
+    content;
+};
 
 stash = rec {content = ref 0};
 f stash << 1;
-assert_eq (!stash.content, 1)
+assert_eq (!stash.content, 1);

@@ -6,15 +6,19 @@ Lynx is an expression-oriented language designed around explicit structure, unif
 
 ### Layout rule
 
-Lynx follows a paragraph-based layout: expressions end with a semicolon or a _blank line_; whitespace and indentation are insignificant.
+Every expression ends with a semicolon; whitespace and indentation are insignificant.
 
 ```lynx
 a = 1; b =
 a;
-c = a + b
+c = a + b;
 
-println c
+println c;
 ```
+
+#### Block
+
+Multiple expressions can be grouped into a **block** with curly braces, e.g., `{a = 1; b = a;}`. Blocks are a purely syntactic structure existing at compile time and do not carry any semantic meanings on their own; they are usually used as [macro](#macros) arguments.
 
 ### Atoms
 
@@ -26,7 +30,7 @@ The unit literal `()` is the only value of type `Unit`.
 
 ```lynx
 assert_eq (type_of println, Str -> Unit);
-assert_eq (println "Hello", ())
+assert_eq (println "Hello", ());
 ```
 
 ##### Interger & floating-point
@@ -57,6 +61,7 @@ Adjacent string literals are concatenated, with line breaks inserted between:
 s = "This is a multi-line..."
 -- Comments do not break it
     \\...string literal.
+    ;
 ```
 
 #### Wildcard (`_`)
@@ -123,7 +128,7 @@ Example:
 
 ```lynx
 p = 1, 2; x, _ = p;
-println x
+println x;
 ```
 
 Mutable identifiers may be rebound with `:=`. Example:
@@ -132,7 +137,7 @@ Mutable identifiers may be rebound with `:=`. Example:
 a = 1; mut a' = a;
 a' := 2;
 println a;  -- 1
-println a'  -- 2
+println a';  -- 2
 ```
 
 ### Lambda expression
@@ -144,9 +149,8 @@ The `=>` operator is right‑associative, convenient for creating higher-order f
 Example:
 
 ```lynx
-get_x = (x, _) => x
-
-add = x => y => x + y
+get_x = (x, _) => x;
+add = x => y => x + y;
 ```
 
 Note, however, that most functions are not defined this way directly; instead, the [`fn` macro](#fn-macro-function-definition) is more common.
@@ -166,8 +170,8 @@ There are three kinds of operators: prefix, infix, and suffix, all of which may 
 ```lynx
 infixl * 70;  -- Left associative, precedence set to 70
 fn ((*) @(A, B, m: Mul (A, B)) (a: A) (b: B): m.R) {
-  m.mul (a, b)
-}
+  m.mul (a, b);
+};
 ```
 
 #### Precedence and associativity of standard operators
@@ -193,22 +197,23 @@ In a type expression, you may name any parameter for later use. `A ~ B` is the t
 Example:
 
 ```lynx
-map: (Type*Type ~ (A, B)) -> (A -> B) -> List A -> List B;
-map (Int, Str) to_str [1, 2, 3]
+my_map: (Type*Type ~ (A, B)) -> (A -> B) -> List A -> List B) = (_, _) => map;
+my_map (Int, Str) to_str [1, 2, 3];
 ```
 
 ### Contextual parameter
 
 Syntax: `@ParamType`.
 
-Contextual parameters do not need to be passed explicitly; instead, they are inferred lexically from the context (e.g. through parameter annotation, trait implementation search, etc).
+Contextual parameters do not need to be passed explicitly; instead, they are inferred lexically from the context (e.g. through parameter annotation, trait implementation search, etc). Nevertheless, you may also pass them explicitly with the `@` prefix.
 
 Example:
 
 ```lynx
-map: @(Type*Type ~ (A, B)) -> (A -> B) -> List A -> List B
+assert_type (map, @(Type*Type ~ (A, B)) -> (A -> B) -> List A -> List B);
+my_map = (A, B) => map @(A, B);
 
-(==): @((Type~A) * Eq A) -> A -> A -> Bool
+assert_type ((==), @((Type~A) * Eq A) -> A -> A -> Bool);
 ```
 
 ### Mutable cell
@@ -229,7 +234,7 @@ Example:
 ra: &Int = ref 1;
 rb = ra;
 ra << 3;
-println !rb  -- 3
+println !rb;  -- 3
 ```
 
 ## Macros
@@ -247,22 +252,22 @@ Evaluates to the last expression.
 ```lynx
 println (do {
     print "1 + 2 = ";
-    1
-} + 2)
+    1;
+} + 2);
 ```
 
 #### `if`
 
 ```lynx
 if (n % 3 == 0 && n % 5 == 0) {
-    println "FizzBuzz"
+    println "FizzBuzz";
 } elif (n % 3 == 0) {
-    println "Fizz"
+    println "Fizz";
 } elif (n % 5 == 0) {
-    println "Buzz"
+    println "Buzz";
 } else {
-    println n
-}
+    println n;
+};
 ```
 
 #### `while`
@@ -271,16 +276,17 @@ if (n % 3 == 0 && n % 5 == 0) {
 mut i = 0;
 while (i < 100) {
     println i;
-    i := i + 1
-}
+    i := i + 1;
+};
 ```
 
 #### `for`
 
 ```lynx
 for (k, v) in (map [(1, 'A'), (2, 'B')]) {
-  println k; println v
-}
+  println k;
+  println v;
+};
 ```
 
 #### `match`
@@ -288,8 +294,8 @@ for (k, v) in (map [(1, 'A'), (2, 'B')]) {
 ```lynx
 match n {
   1 | 2 => "small";
-  _ => "big"
-}
+  _ => "big";
+};
 ```
 
 ### `fn`: function definition
@@ -297,39 +303,39 @@ match n {
 ```lynx
 fn (f (n: Int): Int) {
     if (n == 0) {1}
-    else {n * f (n-1)}
-}
+    else {n * f (n-1)};
+};
 
 fn (swap @A (a: &A, a': &A): Unit) {
     temp = !a;
     a << !a';
-    a' << temp
-}
+    a' << temp;
+};
 ```
 
 ### `trait` & `impl`: ad-hoc polymorphism
 
 ```lynx
 trait (Eq (A: Type)) {
-  eq: A * A -> Bool
-}
+  eq: A * A -> Bool;
+};
 
 impl (Eq Int) {
-  eq = __builtin_eq_int
-}
+  eq = __builtin_eq_int;
+};
 ```
 
 ### `data`: ADT & GADT
 
 ```lynx
 data (Complex (A: Type)) {
-  complex @A (_: A, _: A)
-}
+  complex @A (_: A, _: A);
+};
 
 data (Expr (A: Type)) {
   atom_expr @A (_: A): Expr A;
-  eq_expr @(A, _: Eq A) (_: Expr A, _: Expr A): Expr Bool
-}
+  eq_expr @(A, _: Eq A) (_: Expr A, _: Expr A): Expr Bool;
+};
 ```
 
 ## Module system
