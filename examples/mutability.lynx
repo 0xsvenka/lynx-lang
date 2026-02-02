@@ -11,11 +11,11 @@ rc = ra;
 rc << 3;
 println !ra  -- 3
 
-fn Stash (A: Type): Type {
+fn (Stash (A: Type): Type) {
     Rec {content: &A}
 }
 
-fn f @A (rec {content}: Stash A): &A {
+fn (f @A (rec {content}: Stash A): &A) {
     content
 }
 

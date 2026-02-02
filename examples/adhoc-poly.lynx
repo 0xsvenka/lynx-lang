@@ -1,44 +1,44 @@
-trait Mul (A: Type, B: Type) {
+trait (Mul (A: Type, B: Type)) {
     R: Type;
     mul: A * B -> R
 }
 
-fn (*) @(A, B, m: Mul (A, B)) (a: A) (b: B): m.R {
+fn ((*) @(A, B, m: Mul (A, B)) (a: A) (b: B): m.R) {
     m.mul (a, b)
 }
 
-impl Mul (Int, Int) {
+impl (Mul (Int, Int)) {
     R = Int;
     mul = __builtin_mul_int
 }
 
-impl Mul (B -> C, A -> B) for (A, B, C) {
+impl (Mul (B -> C, A -> B)) for (A, B, C) {
     R = A -> C;
-    fn mul (f, g) { x => f (g x) }
+    fn (mul (f, g)) { x => f (g x) }
 }
 
-trait Eq (A: Type) {
+trait (Eq (A: Type)) {
     eq: A * A -> Bool
 }
 
-fn (==) @(A, e: Eq A) (a: A) (a': A): Bool {
+fn ((==) @(A, e: Eq A) (a: A) (a': A): Bool) {
     e.eq (a, a')
 }
 
-fn (!=) @(A, e: Eq A) (a: A) (a': A): Bool {
+fn ((!=) @(A, e: Eq A) (a: A) (a': A): Bool) {
     (not * e.eq) (a, a')
 }
 
-impl Eq Int {
+impl (Eq Int) {
     eq = __builtin_eq_int
 }
 
-data Complex (A: Type) {
+data (Complex (A: Type)) {
     complex @A (_: A, _: A)
 }
 
-impl Eq (Complex A) for (A, _: Eq A) {
-    fn eq (complex (x1, y1), complex (x2, y2)) {
+impl (Eq (Complex A)) for (A, _: Eq A) {
+    fn (eq (complex (x1, y1), complex (x2, y2))) {
         x1 == x2 && y1 == y2
     }
 }

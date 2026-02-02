@@ -1,6 +1,6 @@
 # Lynx programming language overview
 
-Lynx is an expression-oriented language designed around explicit structure, uniform reference semantics, and operator-driven syntax. Its core philosophy emphasizes clarity, predictable semantics, and composable abstractions, while providing powerful tools like pattern matching, first-class types, macros, and interior mutability.
+Lynx is an expression-oriented language designed around explicit structure, uniform reference semantics, and operator-driven syntax. Its core philosophy emphasizes clarity, predictable semantics, and composable abstractions, while providing powerful tools like pattern matching, first-class types, and macros.
 
 ## Basic syntax
 
@@ -83,7 +83,7 @@ Note, however, that their difference is solely lexical, and they are equivalent 
 
 - Typing: `1, 'A'` is typed `Int * Char`.
 
-The composite nature of tuples means that nullary or unary tuples do not exist; neither atoms nor `()` are tuples.
+The composite nature of tuples means that nullary or unary tuples do not exist; neither atoms nor `()` is a tuple.
 
 Due to the relatively low precedence of `,`, tuples often require surrounding parentheses, as in `f (a, b)`. These parentheses serve the sole duty of grouping and are not part of the tuple syntax.
 
@@ -97,23 +97,23 @@ Due to the relatively low precedence of `,`, tuples often require surrounding pa
 
 #### Map
 
-- Syntax: `#{k0, v0; k1, v1; k2, v2}`.
+- Syntax: `map [(k0, v0), (k1, v1), (k2, v2)]`.
 
-  Maps are introduced by the `#` [macro](#macros). Each key-value pair is written as a binary tuple, and different pairs are separated by `ExprEnd` (i.e. semicolon or blank line). The order of key-value pairs is insignificant.
+  Maps are introduced by the `map` [macro](#macros). Key-value pairs are written as binary tuples and wrapped in a list. The order of them is insignificant.
 
-- Typing: `#{1, 'A'; 2, 'B'}` is typed `Map (Int, Char)`.
+- Typing: `map [(1, 'A'), (2, 'B')]` is typed `Map (Int, Char)`.
 
   All keys share one type and all values share one type; of course, these two types may differ.
 
 #### Record
 
-- Syntax: `rec {k0 = a, k1 = b, k2 = c}`.
+- Syntax: `rec (k0 = a, k1 = b, k2 = c)`.
 
   Records are introduced by the `rec` [macro](#macros).
 
-- Typing: `rec {task = "write Lynx", todo = true}` is typed `Rec {task: Str, todo: Bool}`, where `Rec` is also a macro.
+- Typing: denoted by the `Rec` macro, e.g. `rec (task = "write Lynx", todo = true)` is typed `Rec (task: Str, todo: Bool)`.
 
-Note that items are separated by the comma rather than the semicolon, which is explained by the fact that records are represented as tuples at the root level. Nevertheless, since record items are labeled, the order of them is insignificant.
+Records are represented as tuples at the root level. Nevertheless, since record items are labeled, the order of them is insignificant.
 
 ### Binding expression
 
@@ -144,7 +144,7 @@ The `=>` operator is right‑associative, convenient for creating higher-order f
 Example:
 
 ```lynx
-get_x = x, _ => x
+get_x = (x, _) => x
 
 add = x => y => x + y
 ```
@@ -165,7 +165,7 @@ There are three kinds of operators: prefix, infix, and suffix, all of which may 
 
 ```lynx
 infixl * 70;  -- Left associative, precedence set to 70
-fn (*) @(A, B, m: Mul (A, B)) (a: A) (b: B): m.R {
+fn ((*) @(A, B, m: Mul (A, B)) (a: A) (b: B): m.R) {
   m.mul (a, b)
 }
 ```
@@ -211,9 +211,9 @@ map: @(Type*Type ~ (A, B)) -> (A -> B) -> List A -> List B
 (==): @((Type~A) * Eq A) -> A -> A -> Bool
 ```
 
-### Interior mutability
+### Mutable cell
 
-For any type `T`, the "mutable cell" type `&T` provides interior mutability. Note that this is a distinct concept from mutable identifier.
+For any type `T`, the mutable cell type `&T` provides shared mutability. Note that this is a distinct concept from mutable identifier.
 
 - Create: the `ref` function.
 
@@ -234,9 +234,9 @@ println !rb  -- 3
 
 ## Macros
 
-Macros are essentially compile-time functions that takes a token stream and returns an AST. When the Lynx parser encounters a macro invocation, it applies the custom parsing logic defined by that macro on the remaining token stream, after which it merges the resulting AST into the existing one. This process is called **macro expansion**. Macros may be created by the user.
+Macros are compile-time functions that carry out AST transformations. When the Lynx parser encounters a macro call, it applies the macro to the latter's subtree and merges the result into the parent. This process is called **macro expansion**. Of course, macros may be created by the user.
 
-Here are some of the macros pre-defined by the language:
+Here are some of the pre-defined macros:
 
 ### Control flow macros
 
@@ -254,11 +254,11 @@ println (do {
 #### `if`
 
 ```lynx
-if n % 3 == 0 && n % 5 == 0 {
+if (n % 3 == 0 && n % 5 == 0) {
     println "FizzBuzz"
-} elif n % 3 == 0 {
+} elif (n % 3 == 0) {
     println "Fizz"
-} elif n % 5 == 0 {
+} elif (n % 5 == 0) {
     println "Buzz"
 } else {
     println n
@@ -269,7 +269,7 @@ if n % 3 == 0 && n % 5 == 0 {
 
 ```lynx
 mut i = 0;
-while i < 100 {
+while (i < 100) {
     println i;
     i := i + 1
 }
@@ -278,7 +278,7 @@ while i < 100 {
 #### `for`
 
 ```lynx
-for k, v in #{1, 'A'; 2, 'B'} {
+for (k, v) in (map [(1, 'A'), (2, 'B')]) {
   println k; println v
 }
 ```
@@ -295,12 +295,12 @@ match n {
 ### `fn`: function definition
 
 ```lynx
-fn f (n: Int): Int {
-    if n == 0 {1}
+fn (f (n: Int): Int) {
+    if (n == 0) {1}
     else {n * f (n-1)}
 }
 
-fn swap @A (a: &A, a': &A): Unit {
+fn (swap @A (a: &A, a': &A): Unit) {
     temp = !a;
     a << !a';
     a' << temp
@@ -310,11 +310,11 @@ fn swap @A (a: &A, a': &A): Unit {
 ### `trait` & `impl`: ad-hoc polymorphism
 
 ```lynx
-trait Eq (A: Type) {
+trait (Eq (A: Type)) {
   eq: A * A -> Bool
 }
 
-impl Eq Int {
+impl (Eq Int) {
   eq = __builtin_eq_int
 }
 ```
@@ -322,11 +322,11 @@ impl Eq Int {
 ### `data`: ADT & GADT
 
 ```lynx
-data Complex (A: Type) {
+data (Complex (A: Type)) {
   complex @A (_: A, _: A)
 }
 
-data Expr (A: Type) {
+data (Expr (A: Type)) {
   atom_expr @A (_: A): Expr A;
   eq_expr @(A, _: Eq A) (_: Expr A, _: Expr A): Expr Bool
 }

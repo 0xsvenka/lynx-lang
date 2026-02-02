@@ -1,8 +1,8 @@
 import std::math
 
 f: Int -> Int -> Int = i => j => i + j;
-g: Int * Int -> Int = i, j => i + j;
-println fmt {"{} = {}"; f 1 2, g (1, 2)}  -- Prints "3 = 3"
+g: Int * Int -> Int = (i, j) => i + j;
+println (fmt {"{} = {}"; f 1 2, g (1, 2)})  -- Prints "3 = 3"
 
 c0_' = '\0';
 -- Error!
@@ -24,9 +24,9 @@ range (1, 100, 2)
     |> reduce (+)
     |> println
 
-_ = match std::rand::rand_int (1, 101) {
+_ = match (std::rand::rand_int (1, 101)) {
     1 | 2 => "small";
-    _ => "big"
+    _ => "b" ++ "ig"
 }
 
 a +-- 123;  -- `--` in `+--` does NOT begin a comment
