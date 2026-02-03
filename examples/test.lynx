@@ -31,3 +31,6 @@ _ = match (std::rand::rand_int (1, 101)) {
 
 a +-- 123;  -- `--` in `+--` does NOT begin a comment
 a-- 123;
+
+u: Unit = ();
+--! u' = ( );

@@ -5,7 +5,7 @@ use crate::token::Span;
 #[derive(Debug)]
 pub enum Expr {
     Atom(AtomType, Span),
-    App(Box<Expr>, Vec<Expr>, Span),
+    App(Box<Expr>, Box<Expr>, Span),
 }
 
 impl Display for Expr {
@@ -16,10 +16,13 @@ impl Display for Expr {
 
 #[derive(Debug)]
 pub enum AtomType {
-    Id(String),
-    Op(String),
+    UnitLit,
     IntLit(i64),
     FloatLit(f64),
-    CharLit(f64),
+    CharLit(char),
     StrLit(String),
+
+    Wildcard,
+
+    Name(String),
 }

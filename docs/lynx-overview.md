@@ -6,7 +6,7 @@ Lynx is an expression-oriented language designed around explicit structure, unif
 
 ### Layout rule
 
-Every expression ends with a semicolon; whitespace and indentation are insignificant.
+Expressions are terminated with the semicolon; whitespace and indentation are insignificant.
 
 ```lynx
 a = 1; b =
@@ -18,7 +18,7 @@ println c;
 
 #### Block
 
-Multiple expressions can be grouped into a **block** with curly braces, e.g., `{a = 1; b = a;}`. Blocks are a purely syntactic structure existing at compile time and do not carry any semantic meanings on their own; they are usually used as [macro](#macros) arguments.
+Multiple expressions can be grouped into a **block** with curly braces, e.g. `{a = 1; b = a;}`. Blocks are a purely syntactic structure existing at compile time and do not carry any semantic meanings on their own; they are usually used as [macro](#macros) arguments.
 
 ### Atoms
 
@@ -33,9 +33,9 @@ assert_eq (type_of println, Str -> Unit);
 assert_eq (println "Hello", ());
 ```
 
-##### Interger & floating-point
+##### Integer & floating-point
 
-Interger and floating-point literals are typed `Int` and `Float` respectively. They may be of arbitrary size and precision, limited only by memory.
+Integer and floating-point literals are typed `Int` and `Float` respectively. They may be of arbitrary size and precision, limited only by memory.
 
 ##### Character
 
@@ -47,9 +47,9 @@ String literals are typed `Str`. They must be valid UTF-8.
 
 There are two kinds of string literals:
 
-- **Quoted string** is delimited by double quotes. It supports escape sequences but may not span multiple lines, e.g., `"Hello,\nWorld!"`.
+- **Quoted string** is delimited by double quotes. It supports escape sequences but may not span multiple lines, e.g. `"Hello,\nWorld!"`.
 
-- **Raw string** begins with `\\` and extends to the end of the line, with no escape processing, e.g.,
+- **Raw string** begins with `\\` and extends to the end of the line, with no escape processing, e.g.
 
   ```lynx
   \\Each line starts with "\\" ...
@@ -66,19 +66,19 @@ s = "This is a multi-line..."
 
 #### Wildcard (`_`)
 
-#### Identifier
+#### Name
 
-There are two kinds of identifiers:
+There are two kinds of names:
 
-- Alphabetic identifier: `[A-Za-z_][A-Za-z0-9_'!]*`.
+- Alphabetic name: `[A-Za-z_][A-Za-z0-9_'!]*`.
 
-- Symbolic identifier: ``[~`!@#$%^&*+=|:<>.?/]`` **TODO**
+- Symbolic name: ``[~`!@#$%^&*+=|:<>.?/]`` **TODO**
 
 Note, however, that their difference is solely lexical, and they are equivalent in functionality.
 
 ##### The `mut` modifier
 
-`mut a` declares **mutable identifier** `a`, i.e. it may be [rebound](#binding-expression) to another value.
+`mut a` declares **mutable name** `a`, i.e. it may be [rebound](#binding-expression) to another value.
 
 ### Composite values
 
@@ -131,11 +131,11 @@ p = 1, 2; x, _ = p;
 println x;
 ```
 
-Mutable identifiers may be rebound with `:=`. Example:
+Mutable names may be rebound with `:=`. Example:
 
 ```lynx
 a = 1; mut a' = a;
-a' := 2;
+(a', _) := (2, 0);
 println a;  -- 1
 println a';  -- 2
 ```
@@ -218,7 +218,7 @@ assert_type ((==), @((Type~A) * Eq A) -> A -> A -> Bool);
 
 ### Mutable cell
 
-For any type `T`, the mutable cell type `&T` provides shared mutability. Note that this is a distinct concept from mutable identifier.
+For any type `T`, the mutable cell type `&T` provides shared mutability. Note that this is a distinct concept from mutable name.
 
 - Create: the `ref` function.
 
