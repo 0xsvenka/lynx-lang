@@ -15,14 +15,10 @@ pub enum Error {
     MultipleCharsInCharLit(Span),
     /// Unexpected character.
     UnexpectedChar(Span),
-    /// Unknown escape sequence, in character or string literal.
+    /// Unknown escape sequence.
     UnknownEscapeSeq(Span),
-    /// Unterminated character literal,
-    /// character literal missing a closing quote in the same line.
-    UnterminatedCharLit(Span),
-    /// Unterminated string literal,
-    /// string literal missing a closing quote in the same line.
-    UnterminatedStrLit(Span),
+    /// Unterminated character/string literal.
+    UnterminatedCharOrStrLit(Span),
     // Parsing errors
 }
 
@@ -46,16 +42,13 @@ impl fmt::Display for Error {
             Error::UnknownEscapeSeq(span) => {
                 write!(f, "Lexing Error: Unknown escape sequence at {}", span)
             }
-            Error::UnterminatedCharLit(span) => write!(
-                f,
-                "Lexing Error: Unterminated character literal at {}",
-                span
-            ),
-            Error::UnterminatedStrLit(span) => write!(
-                f,
-                "Lexing Error: Unterminated string literal at {}",
-                span
-            ),
+            Error::UnterminatedCharOrStrLit(span) => {
+                write!(
+                    f,
+                    "Lexing Error: Unterminated character/string literal at {}",
+                    span
+                )
+            }
         }
     }
 }

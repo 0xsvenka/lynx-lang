@@ -1,4 +1,4 @@
-use crate::{lexer::Lexer, parser::Parser};
+use crate::lexer::tokenize;
 
 mod ast;
 mod error;
@@ -11,9 +11,7 @@ fn main() {
     let path = std::env::args_os().nth(1).unwrap();
     let src = std::fs::read_to_string(path).expect("Failed to read file");
 
-    let lexer = Lexer::new(&src);
-    let mut _parser = Parser {};
-    for token in lexer.tokenize().unwrap() {
+    for token in tokenize(&src).unwrap() {
         println!("{}", token);
     }
 }

@@ -37,7 +37,7 @@ pub enum TokenKind {
     UnitLit,
     /// Integer literal.
     IntLit(i64),
-    /// Floating-point number literal.
+    /// Floating-point literal.
     FloatLit(f64),
     /// Character literal.
     CharLit(char),

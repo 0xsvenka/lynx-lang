@@ -33,7 +33,7 @@ assert_eq (type_of println, Str -> Unit);
 assert_eq (println "Hello", ());
 ```
 
-##### Integer & floating-point
+##### Number (integer & floating-point)
 
 Integer and floating-point literals are typed `Int` and `Float` respectively. They may be of arbitrary size and precision, limited only by memory.
 
