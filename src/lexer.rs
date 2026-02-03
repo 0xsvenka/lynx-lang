@@ -10,18 +10,20 @@ const SYM_CHARS: &str = "~`!@#$%^&*-+=|\\:'<,>.?/";
 
 /// Lexer for a single line of Lynx source.
 ///
-/// This type is an internal helper and is *not* intended for public use.
-/// Since no Lynx token spans multiple lines, the overall lexing task can be
-/// divided into independent per-line passes, each handled by a [`LineLexer`],
-/// which simplifies lexing logic.
+/// Since no Lynx token spans multiple lines,
+/// the overall lexing task can be divided into independent per-line passes.
+/// This type is an internal helper for [`tokenize`]
+/// and is *not* intended for public use.
 struct LineLexer<'a> {
-    /// Peekable iterator over the line.
+    /// Peekable iterator over the characters in the line.
     chars: Peekable<Chars<'a>>,
 
-    /// Current line number.
+    /// Line number, `1`-based.
     line_no: usize,
 
-    /// Current column number (before the lookahead).
+    /// Column number *before* the lookahead;
+    /// starts at `0` before any character is consumed,
+    /// thus still `1`-based.
     col_no: usize,
 }
 
@@ -36,8 +38,8 @@ impl<'a> LineLexer<'a> {
         }
     }
 
-    /// Updates the state of the lexer
-    /// when advancing to the next character.
+    /// Advances lexer state by incrementing [`Self::col_no`]
+    /// and consuming one character from [`Self::chars`].
     fn advance(&mut self) {
         self.col_no += 1;
         self.chars.next();
@@ -66,10 +68,10 @@ impl<'a> LineLexer<'a> {
         }
     }
 
-    /// Processes an escape sequence in a character or string literal,
+    /// Handles escape sequence in a character/string literal,
     /// invoked when the lookahead is `\`.
-    fn process_esc_seq(&mut self, lit_start_pos: Pos) -> Result<char, Error> {
-        self.advance(); // Skip the backslash
+    fn handle_esc_seq(&mut self, lit_start_pos: Pos) -> Result<char, Error> {
+        self.advance(); // Skip `\`
         let esc_start_pos = self.pos();
 
         let escaped_ch = match self.chars.peek() {
@@ -102,13 +104,14 @@ impl<'a> LineLexer<'a> {
                 '"'
             }
 
+            // Unicode escape sequence: `\u{...}`
             Some('u') => {
                 self.advance();
 
-                // Expect opening curly brace
                 if let Some('{') = self.chars.peek() {
                     self.advance();
                 } else {
+                    self.advance(); // Skip invalid character
                     return Err(Error::UnknownEscapeSeq(Span(esc_start_pos, self.pos())));
                 }
 
@@ -124,7 +127,7 @@ impl<'a> LineLexer<'a> {
                             hex_str.push(c);
                         }
                         Some(_) => {
-                            self.advance();
+                            self.advance(); // Skip invalid character
                             return Err(Error::UnknownEscapeSeq(Span(esc_start_pos, self.pos())));
                         }
                         None => {
@@ -143,7 +146,7 @@ impl<'a> LineLexer<'a> {
             }
 
             Some(_) => {
-                self.advance();
+                self.advance(); // Skip invalid character
                 return Err(Error::UnknownEscapeSeq(Span(esc_start_pos, self.pos())));
             }
             None => {
@@ -160,14 +163,13 @@ impl<'a> LineLexer<'a> {
     /// Lexes character literals,
     /// invoked when the lookahead is `'`.
     fn lex_char_lit(&mut self) -> Result<Token, Error> {
-        self.advance(); // Skip opening quote
+        self.advance(); // Skip `'`
         let start_pos = self.pos();
         let mut ch_vec = Vec::new();
 
         loop {
             match self.chars.peek() {
                 Some('\'') => {
-                    // Closing quote
                     self.advance();
                     match ch_vec.len() {
                         0 => {
@@ -184,7 +186,7 @@ impl<'a> LineLexer<'a> {
 
                 Some('\\') => {
                     // Escape sequence
-                    let escaped_ch = self.process_esc_seq(start_pos)?;
+                    let escaped_ch = self.handle_esc_seq(start_pos)?;
                     ch_vec.push(escaped_ch);
                 }
 
@@ -203,21 +205,20 @@ impl<'a> LineLexer<'a> {
     /// Lexes quoted string literals,
     /// invoked when the lookahead is `"`.
     fn lex_quoted_str_lit(&mut self) -> Result<Token, Error> {
-        self.advance(); // Skip opening quote
+        self.advance(); // Skip `"`
         let start_pos = self.pos();
         let mut s = String::new();
 
         loop {
             match self.chars.peek() {
                 Some('"') => {
-                    // Closing quote
                     self.advance();
                     return Ok(Token(StrLit(s), Span(start_pos, self.pos())));
                 }
 
                 Some('\\') => {
                     // Escape sequence
-                    let escaped_ch = self.process_esc_seq(start_pos)?;
+                    let escaped_ch = self.handle_esc_seq(start_pos)?;
                     s.push(escaped_ch);
                 }
 
@@ -236,21 +237,21 @@ impl<'a> LineLexer<'a> {
     /// Lexes raw string literals,
     /// invoked when the lookahead is `\\`.
     fn lex_raw_string_lit(&mut self) -> Token {
-        // Skip the double backslashes
-        self.advance();
+        self.advance(); // Skip first `\`
         let start_pos = self.pos();
-        self.advance();
+        self.advance(); // Skip second `\`
         let mut s = String::new();
 
         while let Some(&c) = self.chars.peek() {
-            s.push(c);
             self.advance();
+            s.push(c);
         }
 
         Token(StrLit(s), Span(start_pos, self.pos()))
     }
 
-    /// Checks if a character is a valid digit for the given base.
+    /// Checks if a character is a valid digit under the given base,
+    /// which is among `2`, `8`, `10`, or `16`.
     fn is_valid_digit(c: char, base: u32) -> bool {
         match base {
             2 => c == '0' || c == '1',
@@ -267,7 +268,6 @@ impl<'a> LineLexer<'a> {
         self.advance();
         let start_pos = self.pos();
         let mut num_str = String::new();
-        num_str.push(lookahead);
 
         let mut is_float = false;
         let mut base = 10;
@@ -276,41 +276,43 @@ impl<'a> LineLexer<'a> {
         if lookahead == '0' {
             match self.chars.peek() {
                 Some('x' | 'X') => {
-                    base = 16;
                     self.advance();
-                    num_str.clear();
+                    base = 16;
                 }
                 Some('b' | 'B') => {
-                    base = 2;
                     self.advance();
-                    num_str.clear();
+                    base = 2;
                 }
                 Some('o' | 'O') => {
-                    base = 8;
                     self.advance();
-                    num_str.clear();
+                    base = 8;
                 }
-                _ => {}
+                _ => {
+                    // Just a decimal number starting with `0`
+                    num_str.push(lookahead);
+                }
             }
+        } else {
+            num_str.push(lookahead);
         }
 
         while let Some(&c) = self.chars.peek() {
             match c {
                 '_' => {
-                    self.advance();
+                    self.advance(); // Skip `_` in number literals
                 }
                 '.' if base == 10 => {
-                    // Only decimal numbers can be floats
+                    self.advance();
+                    // Only decimal numbers can be floating-point
                     if is_float {
                         break;
                     }
                     is_float = true;
-                    num_str.push(c);
-                    self.advance();
+                    num_str.push('.');
                 }
                 c if Self::is_valid_digit(c, base) => {
-                    num_str.push(c);
                     self.advance();
+                    num_str.push(c);
                 }
                 _ => {
                     break;
@@ -346,8 +348,8 @@ impl<'a> LineLexer<'a> {
             if !(c.is_alphanumeric() || c == '_' || c == '\'' || c == '!') {
                 break;
             }
-            name.push(c);
             self.advance();
+            name.push(c);
         }
 
         Token(Name(name), Span(start_pos, self.pos()))
@@ -366,8 +368,8 @@ impl<'a> LineLexer<'a> {
             if !SYM_CHARS.contains(c) {
                 break;
             }
-            name.push(c);
             self.advance();
+            name.push(c);
         }
 
         Token(Name(name), Span(start_pos, self.pos()))
@@ -424,7 +426,8 @@ impl<'a> LineLexer<'a> {
         Token(Semicolon, Span(self.pos(), self.pos()))
     }
 
-    /// Handles lookahead `-`.
+    /// Handles lookahead `-`,
+    /// returning [`None`] if a line comment is encountered.
     fn lex_hyphen(&mut self) -> Option<Token> {
         // Cloned to perform a second lookahead
         match self.chars.clone().nth(1) {
@@ -433,7 +436,7 @@ impl<'a> LineLexer<'a> {
                 self.skip_line();
                 None
             }
-            // Otherwise: the beginning of a symbolic name
+            // Otherwise: just a symbolic name
             _ => Some(self.lex_sym('-')),
         }
     }
@@ -444,20 +447,19 @@ impl<'a> LineLexer<'a> {
         match self.chars.clone().nth(1) {
             // `\\`: raw string literal
             Some('\\') => self.lex_raw_string_lit(),
-            // Otherwise: the beginning of a symbolic name
+            // Otherwise: just a symbolic name
             _ => self.lex_sym('\\'),
         }
     }
 
+    /// Handles unknown lookahead.
     fn lex_unknown(&mut self) -> Error {
         self.advance();
         Error::UnexpectedChar(Span(self.pos(), self.pos()))
     }
-}
 
-impl<'a> LineLexer<'a> {
-    /// Lexes the line, returns either a [TokenStream] of all [Token]s
-    /// or the first [Error] encountered.
+    /// Lexes the line, returning either a [`Vec`] of all [`Token`]s
+    /// or the first [`Error`] encountered.
     pub fn tokenize(mut self) -> Result<Vec<Token>, Error> {
         let mut tokens = Vec::new();
         loop {
@@ -467,8 +469,9 @@ impl<'a> LineLexer<'a> {
                 None => {
                     break;
                 }
+
                 Some(&c) => {
-                    let result = match c {
+                    let token = match c {
                         '(' => self.lex_lp(),
                         ')' => self.lex_rp(),
                         '[' => self.lex_lb(),
@@ -490,23 +493,24 @@ impl<'a> LineLexer<'a> {
                             return Err(self.lex_unknown());
                         }
                     };
-                    tokens.push(result);
+                    tokens.push(token);
                 }
             }
         }
+
         Ok(tokens)
     }
 }
 
-/// Lexes Lynx source, returning either a vector of all [Token]s
-/// or the first [Error] encountered.
+/// Lexes Lynx source, returning either a [`Vec`] of all [`Token`]s
+/// or the first [`Error`] encountered.
 pub fn tokenize(src: &str) -> Result<Vec<Token>, Error> {
     let mut tokens = Vec::new();
     for (line_idx, line_str) in src.lines().enumerate() {
         let line_no = line_idx + 1;
         let line_lexer = LineLexer::new(line_str, line_no);
-        let line_stream = line_lexer.tokenize()?;
-        tokens.extend(line_stream);
+        let line_tokens = line_lexer.tokenize()?;
+        tokens.extend(line_tokens);
     }
     Ok(tokens)
 }

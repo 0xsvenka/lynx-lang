@@ -3,9 +3,9 @@ use std::fmt;
 /// Position of a character in Lynx source.
 #[derive(Debug, Clone, Copy)]
 pub struct Pos(
-    /// Line number, starting from `1`.
+    /// Line number, `1`-based.
     pub usize,
-    /// Column number, starting from `1`.
+    /// Column number, `1`-based.
     pub usize,
 );
 
