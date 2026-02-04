@@ -2,54 +2,48 @@ use std::{error, fmt};
 
 use crate::token::Span;
 
-/// Errors that may occur during the compiling process,
-/// including lexing errors, parsing errors, etc.
+/// Kind of an error.
 #[derive(Debug)]
-pub enum Error {
+pub enum ErrorKind {
     // Lexing errors
-    /// Empty character literal.
-    EmptyCharLit(Span),
-    /// Invalid number literal format.
-    InvalidNumLitFormat(Span),
-    /// Multiple characters in character literal.
-    MultipleCharsInCharLit(Span),
-    /// Unexpected character.
-    UnexpectedChar(Span),
-    /// Unknown escape sequence.
-    UnknownEscapeSeq(Span),
-    /// Unterminated character/string literal.
-    UnterminatedCharOrStrLit(Span),
+    EmptyCharLit,
+    InvalidNumLitFormat,
+    MultipleCharsInCharLit,
+    UnexpectedChar,
+    UnknownEscapeSeq,
+    UnterminatedCharOrStrLit,
     // Parsing errors
+}
+
+/// Error occurring during the compilation process.
+#[derive(Debug)]
+pub struct Error(
+    /// Kind of the error.
+    pub ErrorKind,
+    /// Position in Lynx source where the error occurred.
+    pub Span,
+);
+
+impl fmt::Display for ErrorKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ErrorKind::EmptyCharLit => write!(f, "Empty character literal"),
+            ErrorKind::InvalidNumLitFormat => write!(f, "Invalid number literal format"),
+            ErrorKind::MultipleCharsInCharLit => {
+                write!(f, "Multiple characters in character literal")
+            }
+            ErrorKind::UnexpectedChar => write!(f, "Unexpected character"),
+            ErrorKind::UnknownEscapeSeq => write!(f, "Unknown escape sequence"),
+            ErrorKind::UnterminatedCharOrStrLit => {
+                write!(f, "Unterminated character/string literal")
+            }
+        }
+    }
 }
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Error::EmptyCharLit(span) => {
-                write!(f, "Lexing Error: Empty character literal at {}", span)
-            }
-            Error::InvalidNumLitFormat(span) => {
-                write!(f, "Lexing Error: Invalid number literal format at {}", span)
-            }
-            Error::MultipleCharsInCharLit(span) => write!(
-                f,
-                "Lexing Error: Multiple characters in character literal at {}",
-                span
-            ),
-            Error::UnexpectedChar(span) => {
-                write!(f, "Lexing Error: Unexpected character at {}", span)
-            }
-            Error::UnknownEscapeSeq(span) => {
-                write!(f, "Lexing Error: Unknown escape sequence at {}", span)
-            }
-            Error::UnterminatedCharOrStrLit(span) => {
-                write!(
-                    f,
-                    "Lexing Error: Unterminated character/string literal at {}",
-                    span
-                )
-            }
-        }
+        write!(f, "Error: {} at {}", self.0, self.1)
     }
 }
 

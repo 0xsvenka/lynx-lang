@@ -30,7 +30,7 @@ impl fmt::Display for Span {
     }
 }
 
-/// Various kinds of tokens.
+/// Kind of a token.
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenKind {
     /// Unit literal.

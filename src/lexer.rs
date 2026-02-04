@@ -1,7 +1,7 @@
 use std::{iter::Peekable, str::Chars};
 
 use crate::{
-    error::Error,
+    error::{Error, ErrorKind::*},
     token::{Pos, Span, Token, TokenKind::*},
 };
 
@@ -112,7 +112,7 @@ impl<'a> LineLexer<'a> {
                     self.advance();
                 } else {
                     self.advance(); // Skip invalid character
-                    return Err(Error::UnknownEscapeSeq(Span(esc_start_pos, self.pos())));
+                    return Err(Error(UnknownEscapeSeq, Span(esc_start_pos, self.pos())));
                 }
 
                 let mut hex_str = String::new();
@@ -128,32 +128,32 @@ impl<'a> LineLexer<'a> {
                         }
                         Some(_) => {
                             self.advance(); // Skip invalid character
-                            return Err(Error::UnknownEscapeSeq(Span(esc_start_pos, self.pos())));
+                            return Err(Error(UnknownEscapeSeq, Span(esc_start_pos, self.pos())));
                         }
                         None => {
-                            return Err(Error::UnterminatedCharOrStrLit(Span(
-                                lit_start_pos,
-                                self.pos(),
-                            )));
+                            return Err(Error(
+                                UnterminatedCharOrStrLit,
+                                Span(lit_start_pos, self.pos()),
+                            ));
                         }
                     }
                 }
 
                 let code_point = u32::from_str_radix(&hex_str, 16)
-                    .map_err(|_| Error::UnknownEscapeSeq(Span(esc_start_pos, self.pos())))?;
+                    .map_err(|_| Error(UnknownEscapeSeq, Span(esc_start_pos, self.pos())))?;
                 char::from_u32(code_point)
-                    .ok_or_else(|| Error::UnknownEscapeSeq(Span(esc_start_pos, self.pos())))?
+                    .ok_or_else(|| Error(UnknownEscapeSeq, Span(esc_start_pos, self.pos())))?
             }
 
             Some(_) => {
                 self.advance(); // Skip invalid character
-                return Err(Error::UnknownEscapeSeq(Span(esc_start_pos, self.pos())));
+                return Err(Error(UnknownEscapeSeq, Span(esc_start_pos, self.pos())));
             }
             None => {
-                return Err(Error::UnterminatedCharOrStrLit(Span(
-                    lit_start_pos,
-                    self.pos(),
-                )));
+                return Err(Error(
+                    UnterminatedCharOrStrLit,
+                    Span(lit_start_pos, self.pos()),
+                ));
             }
         };
 
@@ -173,13 +173,13 @@ impl<'a> LineLexer<'a> {
                     self.advance();
                     match ch_vec.len() {
                         0 => {
-                            return Err(Error::EmptyCharLit(Span(start_pos, self.pos())));
+                            return Err(Error(EmptyCharLit, Span(start_pos, self.pos())));
                         }
                         1 => {
                             return Ok(Token(CharLit(ch_vec[0]), Span(start_pos, self.pos())));
                         }
                         _ => {
-                            return Err(Error::MultipleCharsInCharLit(Span(start_pos, self.pos())));
+                            return Err(Error(MultipleCharsInCharLit, Span(start_pos, self.pos())));
                         }
                     }
                 }
@@ -196,7 +196,7 @@ impl<'a> LineLexer<'a> {
                 }
 
                 None => {
-                    return Err(Error::UnterminatedCharOrStrLit(Span(start_pos, self.pos())));
+                    return Err(Error(UnterminatedCharOrStrLit, Span(start_pos, self.pos())));
                 }
             }
         }
@@ -228,7 +228,7 @@ impl<'a> LineLexer<'a> {
                 }
 
                 None => {
-                    return Err(Error::UnterminatedCharOrStrLit(Span(start_pos, self.pos())));
+                    return Err(Error(UnterminatedCharOrStrLit, Span(start_pos, self.pos())));
                 }
             }
         }
@@ -325,13 +325,13 @@ impl<'a> LineLexer<'a> {
             if let Ok(num) = num_str.parse::<f64>() {
                 Ok(Token(FloatLit(num), Span(start_pos, self.pos())))
             } else {
-                Err(Error::InvalidNumLitFormat(Span(start_pos, self.pos())))
+                Err(Error(InvalidNumLitFormat, Span(start_pos, self.pos())))
             }
         } else {
             if let Ok(num) = i64::from_str_radix(&num_str, base) {
                 Ok(Token(IntLit(num), Span(start_pos, self.pos())))
             } else {
-                Err(Error::InvalidNumLitFormat(Span(start_pos, self.pos())))
+                Err(Error(InvalidNumLitFormat, Span(start_pos, self.pos())))
             }
         }
     }
@@ -455,7 +455,7 @@ impl<'a> LineLexer<'a> {
     /// Handles unknown lookahead.
     fn lex_unknown(&mut self) -> Error {
         self.advance();
-        Error::UnexpectedChar(Span(self.pos(), self.pos()))
+        Error(UnexpectedChar, Span(self.pos(), self.pos()))
     }
 
     /// Lexes the line, returning either a [`Vec`] of all [`Token`]s
@@ -655,19 +655,19 @@ mod tests {
     #[test]
     fn test_empty_char_literal_error() {
         let result = tokenize("''");
-        assert!(matches!(result, Err(Error::EmptyCharLit(_))));
+        assert!(matches!(result, Err(Error(EmptyCharLit, _))));
     }
 
     #[test]
     fn test_multiple_chars_in_char_literal_error() {
         let result = tokenize("'ab'");
-        assert!(matches!(result, Err(Error::MultipleCharsInCharLit(_))));
+        assert!(matches!(result, Err(Error(MultipleCharsInCharLit, _))));
     }
 
     #[test]
     fn test_unterminated_char_literal_error() {
         let result = tokenize("'a");
-        assert!(matches!(result, Err(Error::UnterminatedCharOrStrLit(_))));
+        assert!(matches!(result, Err(Error(UnterminatedCharOrStrLit, _))));
     }
 
     #[test]
@@ -714,43 +714,43 @@ mod tests {
     #[test]
     fn test_unterminated_string_literal_error() {
         let result = tokenize(r#""unterminated"#);
-        assert!(matches!(result, Err(Error::UnterminatedCharOrStrLit(_))));
+        assert!(matches!(result, Err(Error(UnterminatedCharOrStrLit, _))));
     }
 
     #[test]
     fn test_unknown_escape_sequence_error() {
         let result = tokenize(r"'\x'");
-        assert!(matches!(result, Err(Error::UnknownEscapeSeq(_))));
+        assert!(matches!(result, Err(Error(UnknownEscapeSeq, _))));
     }
 
     #[test]
     fn test_invalid_unicode_escape_no_brace() {
         let result = tokenize(r"'\u41'");
-        assert!(matches!(result, Err(Error::UnknownEscapeSeq(_))));
+        assert!(matches!(result, Err(Error(UnknownEscapeSeq, _))));
     }
 
     #[test]
     fn test_invalid_unicode_escape_empty() {
         let result = tokenize(r"'\u{}'");
-        assert!(matches!(result, Err(Error::UnknownEscapeSeq(_))));
+        assert!(matches!(result, Err(Error(UnknownEscapeSeq, _))));
     }
 
     #[test]
     fn test_invalid_unicode_escape_bad_hex() {
         let result = tokenize(r"'\u{XYZ}'");
-        assert!(matches!(result, Err(Error::UnknownEscapeSeq(_))));
+        assert!(matches!(result, Err(Error(UnknownEscapeSeq, _))));
     }
 
     #[test]
     fn test_invalid_unicode_escape_invalid_codepoint() {
         let result = tokenize(r"'\u{FFFFFF}'");
-        assert!(matches!(result, Err(Error::UnknownEscapeSeq(_))));
+        assert!(matches!(result, Err(Error(UnknownEscapeSeq, _))));
     }
 
     #[test]
     fn test_unexpected_char_error() {
         let result = tokenize("§");
-        assert!(matches!(result, Err(Error::UnexpectedChar(_))));
+        assert!(matches!(result, Err(Error(UnexpectedChar, _))));
     }
 
     #[test]
@@ -841,7 +841,7 @@ mod tests {
     #[test]
     fn test_invalid_base_prefix_no_digits() {
         let result = tokenize("0x");
-        assert!(matches!(result, Err(Error::InvalidNumLitFormat(_))));
+        assert!(matches!(result, Err(Error(InvalidNumLitFormat, _))));
     }
 
     #[test]

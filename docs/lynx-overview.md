@@ -127,7 +127,7 @@ Syntax: `pattern = expr`.
 Example:
 
 ```lynx
-p = 1, 2; x, _ = p;
+p = (1, 2); (x, _) = p;
 println x;
 ```
 
@@ -168,7 +168,7 @@ Lynx syntax relies heavily on operators. During parsing, even symbols like `,` a
 There are three kinds of operators: prefix, infix, and suffix, all of which may be enriched by user-defined ones. This allows for enormous flexibility.
 
 ```lynx
-infixl * 70;  -- Left associative, precedence set to 70
+infixl * 70;  -- Infix operator, left associative, precedence set to 70
 fn ((*) @(A, B, m: Mul (A, B)) (a: A) (b: B): m.R) {
   m.mul (a, b);
 };

@@ -6,6 +6,7 @@ use crate::token::Span;
 pub enum Expr {
     Atom(AtomType, Span),
     App(Box<Expr>, Box<Expr>, Span),
+    Block(Vec<Expr>, Span),
 }
 
 impl Display for Expr {
