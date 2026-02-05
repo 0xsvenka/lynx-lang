@@ -27,15 +27,15 @@ pub struct Error(
 impl fmt::Display for ErrorKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ErrorKind::EmptyCharLit => write!(f, "Empty character literal"),
-            ErrorKind::InvalidNumLitFormat => write!(f, "Invalid number literal format"),
+            ErrorKind::EmptyCharLit => write!(f, "empty character literal"),
+            ErrorKind::InvalidNumLitFormat => write!(f, "invalid number literal format"),
             ErrorKind::MultipleCharsInCharLit => {
-                write!(f, "Multiple characters in character literal")
+                write!(f, "multiple characters in character literal")
             }
-            ErrorKind::UnexpectedChar => write!(f, "Unexpected character"),
-            ErrorKind::UnknownEscapeSeq => write!(f, "Unknown escape sequence"),
+            ErrorKind::UnexpectedChar => write!(f, "unexpected character"),
+            ErrorKind::UnknownEscapeSeq => write!(f, "unknown escape sequence"),
             ErrorKind::UnterminatedCharOrStrLit => {
-                write!(f, "Unterminated character/string literal")
+                write!(f, "unterminated character/string literal")
             }
         }
     }
